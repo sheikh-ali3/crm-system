@@ -8,6 +8,7 @@ import './styles/FixedDialogs.css';
 import SuperAdminSidebar from '../Components/Layout/SuperAdminSidebar';
 import ThemeToggle from '../Components/UI/ThemeToggle';
 import Modal from 'react-modal';
+import websocketService from '../services/websocketService';
 
 // Initialize Modal
 Modal.setAppElement('#root');
@@ -2051,7 +2052,7 @@ const SuperAdminDashboard = () => {
         showAlert('Please select a due date', 'error');
         return;
       }
-
+      
       // Calculate final amounts
       const amount = invoiceForm.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
       const totalAmount = amount + (amount * (invoiceForm.tax || 0) / 100);
@@ -2267,6 +2268,52 @@ const SuperAdminDashboard = () => {
       totalAmount
     });
   };
+
+  // Add WebSocket event handlers
+  useEffect(() => {
+    // Connect to WebSocket when component mounts
+    websocketService.connect();
+
+    // Subscribe to invoice events
+    const handleInvoiceCreated = (invoice) => {
+      setInvoices(prevInvoices => [...prevInvoices, invoice]);
+      showAlert('New invoice created', 'success');
+    };
+
+    const handleInvoiceUpdated = (invoice) => {
+      setInvoices(prevInvoices => 
+        prevInvoices.map(inv => inv._id === invoice._id ? invoice : inv)
+      );
+      showAlert('Invoice updated', 'success');
+    };
+
+    const handleInvoiceDeleted = ({ id }) => {
+      setInvoices(prevInvoices => prevInvoices.filter(inv => inv._id !== id));
+      showAlert('Invoice deleted', 'success');
+    };
+
+    const handleInvoiceStatusUpdated = (invoice) => {
+      setInvoices(prevInvoices => 
+        prevInvoices.map(inv => inv._id === invoice._id ? invoice : inv)
+      );
+      showAlert('Invoice status updated', 'success');
+    };
+
+    // Subscribe to events
+    websocketService.subscribe('invoice_created', handleInvoiceCreated);
+    websocketService.subscribe('invoice_updated', handleInvoiceUpdated);
+    websocketService.subscribe('invoice_deleted', handleInvoiceDeleted);
+    websocketService.subscribe('invoice_status_updated', handleInvoiceStatusUpdated);
+
+    // Cleanup on unmount
+    return () => {
+      websocketService.unsubscribe('invoice_created', handleInvoiceCreated);
+      websocketService.unsubscribe('invoice_updated', handleInvoiceUpdated);
+      websocketService.unsubscribe('invoice_deleted', handleInvoiceDeleted);
+      websocketService.unsubscribe('invoice_status_updated', handleInvoiceStatusUpdated);
+      websocketService.disconnect();
+    };
+  }, []);
 
   return (
     <div className="dashboard-layout">
@@ -2896,19 +2943,19 @@ const SuperAdminDashboard = () => {
                 </div>
                 
                 <div className="form-row">
-                  <div className="form-group">
-                    <label>Company Name</label>
-                    <input 
-                      type="text" 
+                <div className="form-group">
+                  <label>Company Name</label>
+                  <input
+                    type="text"
                       value={invoiceForm.enterpriseDetails.companyName} 
                       readOnly
                       className="read-only"
-                    />
-                  </div>
-                  
+                  />
+                </div>
+                
                   <div className="form-group">
                     <label>Email</label>
-                    <input 
+                    <input
                       type="email" 
                       value={invoiceForm.enterpriseDetails.email} 
                       readOnly
@@ -2924,9 +2971,9 @@ const SuperAdminDashboard = () => {
                 {invoiceForm.items.map((item, index) => (
                   <div key={index} className="invoice-item">
                     <div className="form-row">
-                      <div className="form-group">
+                  <div className="form-group">
                         <label>Type</label>
-                        <select 
+                    <select
                           value={item.type} 
                           onChange={(e) => handleItemTypeChange(index, e.target.value)}
                         >
@@ -2941,8 +2988,8 @@ const SuperAdminDashboard = () => {
                           value={item.itemId} 
                           onChange={(e) => handleItemNameChange(index, e.target.options[e.target.selectedIndex].text, e.target.value)}
                           required
-                          className="form-control"
-                        >
+                      className="form-control"
+                    >
                           <option value="">Select {item.type === 'service' ? 'Service' : 'Quotation'}</option>
                           {item.type === 'service' ? (
                             enterpriseServices.map(service => (
@@ -2957,9 +3004,9 @@ const SuperAdminDashboard = () => {
                               </option>
                             ))
                           )}
-                        </select>
-                      </div>
-                    </div>
+                    </select>
+                  </div>
+                </div>
                     
                     <div className="form-group">
                       <label>Description</label>
@@ -2969,30 +3016,30 @@ const SuperAdminDashboard = () => {
                         className="read-only"
                         rows={2}
                       />
-                    </div>
-                    
-                    <div className="form-row">
-                      <div className="form-group">
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
                         <label>Quantity <span className="required">*</span></label>
-                        <input 
+                    <input
                           type="number" 
                           value={item.quantity} 
                           onChange={(e) => handleItemQuantityChange(index, parseFloat(e.target.value) || 0)}
                           required
                           min="1"
                           step="1"
-                        />
-                      </div>
+                    />
+                  </div>
                       
-                      <div className="form-group">
+                <div className="form-group">
                         <label>Unit Price ($) <span className="required">*</span></label>
-                        <input 
+                  <input
                           type="number" 
                           value={item.unitPrice} 
                           readOnly
                           className="read-only"
-                        />
-                      </div>
+                  />
+                </div>
                       
                       <div className="form-group">
                         <label>Total Price ($)</label>
@@ -3002,7 +3049,7 @@ const SuperAdminDashboard = () => {
                           readOnly
                           className="read-only"
                         />
-                      </div>
+              </div>
                       
                       <button 
                         type="button" 
@@ -3024,30 +3071,30 @@ const SuperAdminDashboard = () => {
               <div className="form-section">
                 <h3>Invoice Details</h3>
                 
-                <div className="form-row">
-                  <div className="form-group">
+              <div className="form-row">
+                <div className="form-group">
                     <label>Total Amount ($)</label>
-                    <input 
+                  <input
                       type="number" 
                       value={invoiceForm.totalAmount} 
                       readOnly
                       className="read-only"
-                    />
-                  </div>
+                  />
+                </div>
                 </div>
                 
                 <div className="form-row">
                   
                   
-                  <div className="form-group">
+                <div className="form-group">
                     <label>Due Date <span className="required">*</span></label>
-                    <input 
+                  <input
                       type="date" 
                       value={invoiceForm.dueDate} 
                       onChange={(e) => setInvoiceForm({...invoiceForm, dueDate: e.target.value})}
                       required
-                    />
-                  </div>
+                  />
+                </div>
                   
                   <div className="form-group">
                     <label>Billing Period</label>
@@ -3057,7 +3104,7 @@ const SuperAdminDashboard = () => {
                       onChange={(e) => setInvoiceForm({...invoiceForm, billingPeriod: e.target.value})}
                       placeholder="e.g. January 2023"
                     />
-                  </div>
+              </div>
                 </div>
                 
                 <div className="form-group">

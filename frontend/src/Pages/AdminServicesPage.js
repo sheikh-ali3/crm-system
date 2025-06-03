@@ -676,6 +676,14 @@ const AdminServicesPage = () => {
         return;
       }
 
+      // Ensure enterprise details are properly set from admin profile
+      const adminDetails = {
+        companyName: adminProfile?.enterprise?.companyName || adminProfile?.profile?.company || '',
+        contactPerson: quotationForm.enterpriseDetails.contactPerson || adminProfile?.profile?.fullName || '',
+        email: adminProfile?.email || '',
+        phone: quotationForm.enterpriseDetails.phone || adminProfile?.profile?.phone || ''
+      };
+
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       
       // Primary and fallback endpoints
@@ -689,7 +697,10 @@ const AdminServicesPage = () => {
         // First try the primary endpoint
         const response = await axios.post(
           primaryEndpoint,
-          quotationForm,
+          {
+            ...quotationForm,
+            enterpriseDetails: adminDetails
+          },
           { 
             headers: { 
               'Authorization': `Bearer ${token}`,
@@ -708,7 +719,10 @@ const AdminServicesPage = () => {
         console.log('Trying fallback quotation endpoint:', fallbackEndpoint);
         const fallbackResponse = await axios.post(
           fallbackEndpoint,
-          quotationForm,
+          {
+            ...quotationForm,
+            enterpriseDetails: adminDetails
+          },
           { 
             headers: { 
               'Authorization': `Bearer ${token}`,
@@ -780,6 +794,36 @@ const AdminServicesPage = () => {
       });
       
       console.log('Pre-filled quotation form with admin details:', adminDetails);
+    } else {
+      // If adminProfile is not available, fetch it from the API
+      const token = localStorage.getItem('token');
+      if (token) {
+        axios.get(`${apiUrl}/admin`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        .then(response => {
+          const adminData = response.data;
+          const adminDetails = {
+            companyName: adminData.enterprise?.companyName || adminData.profile?.company || '',
+            contactPerson: adminData.profile?.fullName || '',
+            email: adminData.email || '',
+            phone: adminData.profile?.phone || ''
+          };
+          
+          setQuotationForm({
+            requestDetails: '',
+            customRequirements: '',
+            requestedPrice: '',
+            enterpriseDetails: adminDetails
+          });
+          
+          console.log('Pre-filled quotation form with API admin details:', adminDetails);
+        })
+        .catch(error => {
+          console.error('Error fetching admin profile:', error);
+          showAlert('Error loading enterprise details. Please try again.', 'error');
+        });
+      }
     }
     
     setOpenQuotationForm(true);
@@ -1165,13 +1209,8 @@ const AdminServicesPage = () => {
                   <input 
                     type="text" 
                     value={quotationForm.enterpriseDetails.companyName} 
-                    onChange={(e) => setQuotationForm({
-                      ...quotationForm, 
-                      enterpriseDetails: {
-                        ...quotationForm.enterpriseDetails,
-                        companyName: e.target.value
-                      }
-                    })}
+                    readOnly
+                    className="read-only"
                     placeholder="Your company name"
                   />
                 </div>
@@ -1199,13 +1238,8 @@ const AdminServicesPage = () => {
                   <input 
                     type="email" 
                     value={quotationForm.enterpriseDetails.email} 
-                    onChange={(e) => setQuotationForm({
-                      ...quotationForm, 
-                      enterpriseDetails: {
-                        ...quotationForm.enterpriseDetails,
-                        email: e.target.value
-                      }
-                    })}
+                    readOnly
+                    className="read-only"
                     placeholder="Contact email"
                   />
                 </div>
