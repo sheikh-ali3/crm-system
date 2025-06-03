@@ -4,10 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import './ComplaintsManagement.css';
 import SuperAdminSidebar from '../../Components/Layout/SuperAdminSidebar';
 import ThemeToggle from '../../Components/UI/ThemeToggle';
-import TicketList from '../../Components/Complaints/TicketList';
-import TicketDetail from '../../Components/Complaints/TicketDetail';
-import NewTicketForm from '../../Components/Complaints/NewTicketForm';
-import TicketStats from '../../Components/Complaints/TicketStats';
+import TicketList from './Components/TicketList';
+import TicketDetail from './Components/TicketDetail';
+import NewTicketForm from './Components/NewTicketForm';
+import TicketStats from './Components/TicketStats';
 
 const ComplaintsManagement = () => {
   const navigate = useNavigate();
