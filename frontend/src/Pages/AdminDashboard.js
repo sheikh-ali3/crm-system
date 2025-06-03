@@ -1929,8 +1929,9 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                           <label>Enterprise Name *</label>
                           <input
                             type="text"
-                            value={quotationForm.enterpriseName}
-                            onChange={e => setQuotationForm({ ...quotationForm, enterpriseName: e.target.value })}
+                            value={currentUser?.enterprise?.companyName || currentUser?.profile?.companyName || ''}
+                            readOnly
+                            className="read-only"
                             required
                           />
                         </div>
@@ -1947,8 +1948,9 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                           <label>Email *</label>
                           <input
                             type="email"
-                            value={quotationForm.email}
-                            onChange={e => setQuotationForm({ ...quotationForm, email: e.target.value })}
+                            value={currentUser?.email || ''}
+                            readOnly
+                            className="read-only"
                             required
                           />
                         </div>
