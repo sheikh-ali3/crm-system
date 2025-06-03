@@ -1,0 +1,76 @@
+:root {
+  /* Light Theme (Default) */
+  --primary-color: #4CAF50;  /* Green primary color */
+  --primary-hover: #45a049;
+  --primary-light: rgba(76, 175, 80, 0.1);
+  --primary-shadow: rgba(76, 175, 80, 0.25);
+  
+  --success-color: #2ecc71;
+  --success-hover: #27ae60;
+  
+  --warning-color: #f39c12;
+  --warning-hover: #e67e22;
+  
+  --danger-color: #e74c3c;
+  --danger-hover: #c0392b;
+  
+  --text-primary: #2c3e50;
+  --text-secondary: #34495e;
+  --text-muted: #7f8c8d;
+  
+  --card-bg: #ffffff;
+  --content-bg: #f9f9f9;
+  --border-color: #ddd;
+  --border-light: #eee;
+  
+  --background: #f5f7fa;
+  
+  /* Additional variables needed by components */
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
+  --input-bg: #ffffff;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --sidebar-width: 250px;
+  --info-color: #2196F3;
+  --info-hover: #1e88e5;
+}
+
+.dark-theme {
+  /* Dark Theme */
+  --primary-color: #4CAF50;  /* Keep same primary color for consistency */
+  --primary-hover: #45a049;
+  --primary-light: rgba(76, 175, 80, 0.15);
+  --primary-shadow: rgba(76, 175, 80, 0.25);
+  
+  --success-color: #2ecc71;
+  --success-hover: #27ae60;
+  
+  --warning-color: #f39c12;
+  --warning-hover: #e67e22;
+  
+  --danger-color: #e74c3c;
+  --danger-hover: #c0392b;
+  
+  --text-primary: #f5f5f5;
+  --text-secondary: #cccccc;
+  --text-muted: #999999;
+  
+  --card-bg: #1e1e1e;
+  --content-bg: #121212;
+  --border-color: #333333;
+  --border-light: #2a2a2a;
+  
+  --background: #121212;
+  
+  /* Additional variables needed by components */
+  --sidebar-bg: #1e1e1e;
+  --header-bg: #1e1e1e;
+  --input-bg: #2a2a2a;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --info-color: #40c4ff;
+  --info-hover: #00b0ff;
+} 

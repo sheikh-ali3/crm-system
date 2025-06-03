@@ -1,0 +1,136 @@
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import HomePage from './Pages/HomePage';
+import LoginPage from './Pages/LoginPage';
+import SuperAdminLogin from './Pages/SuperAdminLogin';
+import SuperAdminDashboard from './Pages/SuperAdminDashboard';
+import AdminDashboard from './Pages/AdminDashboard';
+import UserDashboard from './Pages/UserDashboard';
+import CustomerManagement from './Pages/CRM/CustomerManagement';
+import SuperAdminCustomerManagement from './Pages/CRM/SuperAdminCustomerManagement';
+import LeadManagement from './Pages/CRM/LeadManagement';
+import DealManagement from './Pages/CRM/DealManagement';
+import { ThemeProvider } from './utils/ThemeContext';
+import ProtectedRoute from './utils/ProtectedRoute';
+import { initAuth } from './services/authService';
+
+/**
+ * App Component - Main routing setup for the CRM application
+ * 
+ * Handles all routes in the application with role-based access.
+ * SEO-friendly component organization with semantic route names.
+ * 
+ * @returns {JSX.Element} The router configuration with all app routes
+ */
+const App = () => {
+  // Initialize authentication on app startup
+  useEffect(() => {
+    initAuth();
+  }, []);
+
+  return (
+    <ThemeProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+
+          {/* SuperAdmin Routes */}
+          <Route path="/superadmin" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/products" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/services" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/enterprise" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/quotations" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/invoices" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/reports" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/expenses" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/receipts" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/complaints" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminDashboard />
+            </ProtectedRoute>
+          } />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+          
+          {/* User Routes */}
+          <Route path="/user" element={
+            <ProtectedRoute allowedRoles={['user']}>
+              <UserDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* CRM Routes */}
+          <Route path="/crm/customers" element={
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+              <CustomerManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/crm/leads" element={
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+              <LeadManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/crm/deals" element={
+            <ProtectedRoute allowedRoles={['admin', 'superadmin']}>
+              <DealManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/superadmin/crm/customers" element={
+            <ProtectedRoute allowedRoles={['superadmin']}>
+              <SuperAdminCustomerManagement />
+            </ProtectedRoute>
+          } />
+
+          {/* Catch all route - redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </ThemeProvider>
+  );
+};
+
+export default App;

@@ -1,0 +1,753 @@
+@import '../../styles/theme.css';
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.crm-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 30px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-primary);
+}
+
+.crm-header {
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.crm-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.crm-title h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.8rem;
+}
+
+.filtered-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  background-color: var(--primary-light);
+  border: 1px solid var(--primary-shadow);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: var(--primary-color);
+  gap: 10px;
+}
+
+.clear-filter {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.clear-filter:hover {
+  opacity: 1;
+}
+
+.crm-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.search-container {
+  position: relative;
+}
+
+.search-input {
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  width: 220px;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-shadow);
+}
+
+.filter-select {
+  padding: 10px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.view-toggle-btn, 
+.add-btn {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.view-toggle-btn {
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.view-toggle-btn:hover {
+  background-color: var(--border-light);
+}
+
+.add-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.add-btn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--primary-shadow);
+}
+
+.add-btn.primary {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px 20px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 0;
+  color: #7f8c8d;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  background-color: var(--danger-color);
+  opacity: 0.1;
+  border-radius: 10px;
+  color: var(--danger-color);
+  text-align: center;
+}
+
+.error-message {
+  margin-bottom: 20px;
+  font-size: 1rem;
+}
+
+.retry-btn {
+  padding: 10px 20px;
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+  background-color: var(--danger-hover);
+}
+
+.no-data-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 20px;
+  background-color: var(--content-bg);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.no-data {
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  font-size: 1.1rem;
+}
+
+.customers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+}
+
+.customer-card {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  border: 1px solid var(--border-light);
+}
+
+.customer-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.customer-card.lead {
+  border-top: 4px solid #f39c12;
+}
+
+.customer-card.customer {
+  border-top: 4px solid #2ecc71;
+}
+
+.customer-card.inactive {
+  border-top: 4px solid #95a5a6;
+}
+
+.customer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-light);
+  background-color: var(--content-bg);
+}
+
+.customer-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.status-badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge.lead {
+  background-color: var(--warning-color);
+  opacity: 0.2;
+  color: var(--warning-color);
+}
+
+.status-badge.customer {
+  background-color: var(--success-color);
+  opacity: 0.2;
+  color: var(--success-color);
+}
+
+.status-badge.inactive {
+  background-color: var(--text-muted);
+  opacity: 0.2;
+  color: var(--text-muted);
+}
+
+.customer-info {
+  padding: 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.customer-info p {
+  margin: 0;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.customer-info p i {
+  color: var(--text-muted);
+  width: 18px;
+  text-align: center;
+}
+
+.potential-value {
+  font-weight: 600;
+  color: var(--success-color) !important;
+}
+
+.assigned-admin {
+  margin-top: 5px;
+  font-style: italic;
+  color: var(--text-muted) !important;
+}
+
+.customer-actions {
+  display: flex;
+  padding: 15px 20px;
+  gap: 10px;
+  border-top: 1px solid var(--border-light);
+  background-color: var(--content-bg);
+}
+
+.edit-btn, 
+.delete-btn {
+  padding: 8px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  flex: 1;
+}
+
+.edit-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.delete-btn {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: var(--danger-hover);
+}
+
+.edit-btn.small, 
+.delete-btn.small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.customers-table-container {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.customers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.customers-table th {
+  background-color: var(--content-bg);
+  padding: 15px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 2px solid var(--border-light);
+}
+
+.customers-table th:hover {
+  background-color: var(--primary-light);
+}
+
+.customers-table td {
+  padding: 15px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+
+.customers-table tr:last-child td {
+  border-bottom: none;
+}
+
+.customers-table tr:hover td {
+  background-color: var(--content-bg);
+}
+
+.customers-table tr.lead td:first-child {
+  border-left: 4px solid #f39c12;
+}
+
+.customers-table tr.customer td:first-child {
+  border-left: 4px solid #2ecc71;
+}
+
+.customers-table tr.inactive td:first-child {
+  border-left: 4px solid #95a5a6;
+}
+
+.action-cell {
+  display: flex;
+  gap: 10px;
+}
+
+.no-data-cell {
+  text-align: center;
+  padding: 30px !important;
+  color: #7f8c8d;
+  font-style: italic;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  border-bottom: 1px solid var(--border-light);
+  background-color: var(--content-bg);
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.3rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: var(--danger-color);
+}
+
+.modal-body {
+  padding: 25px;
+}
+
+.customer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.required {
+  color: var(--danger-color);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 12px 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-shadow);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.cancel-btn, 
+.submit-btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.cancel-btn {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.submit-btn {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: var(--border-light);
+}
+
+.submit-btn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--primary-shadow);
+}
+
+@media (max-width: 992px) {
+  .customers-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .crm-container {
+    padding: 20px 15px;
+  }
+  
+  .crm-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .crm-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-input, 
+  .filter-select, 
+  .view-toggle-btn, 
+  .add-btn {
+    width: 100%;
+  }
+  
+  .customers-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal {
+    width: 95%;
+  }
+}
+
+/* Data Separation Notice */
+.data-separation-notice {
+  background-color: var(--primary-light);
+  border-left: 4px solid var(--primary-color);
+  padding: 12px 20px;
+  margin: 0 0 25px 0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.data-separation-notice p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.data-separation-notice i {
+  font-size: 1.2rem;
+  color: var(--primary-color);
+}
+
+/* Additional dark mode specific overrides */
+.dark-theme .loading-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid var(--primary-color);
+}
+
+.dark-theme .search-input::placeholder,
+.dark-theme .form-group input::placeholder,
+.dark-theme .form-group textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.dark-theme .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.dark-theme .customer-card {
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .customer-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Improve contrast for status badges in dark mode */
+.dark-theme .status-badge.lead {
+  background-color: var(--warning-color);
+  opacity: 0.4;
+  color: white;
+}
+
+.dark-theme .status-badge.customer {
+  background-color: var(--success-color);
+  opacity: 0.4;
+  color: white;
+}
+
+.dark-theme .status-badge.inactive {
+  background-color: var(--text-muted);
+  opacity: 0.4;
+  color: white;
+}
+
+/* Fix table and form styling for dark mode */
+.dark-theme .customers-table th {
+  color: var(--text-primary);
+}
+
+.dark-theme .customers-table tr:hover td {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.dark-theme .form-group input:focus,
+.dark-theme .form-group select:focus,
+.dark-theme .form-group textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.4);
+}
+
+.dark-theme .data-separation-notice {
+  background-color: rgba(76, 175, 80, 0.2);
+}
+
+/* Fix specific issues in dark mode */
+.dark-theme .loading-container {
+  color: var(--text-muted);
+}
+
+.dark-theme .error-container {
+  background-color: rgba(231, 76, 60, 0.2);
+  color: var(--danger-color);
+}
+
+.dark-theme .no-data-cell {
+  color: var(--text-muted);
+}
+
+/* Customer card border colors in dark mode */
+.dark-theme .customer-card.lead {
+  border-top: 4px solid var(--warning-color);
+}
+
+.dark-theme .customer-card.customer {
+  border-top: 4px solid var(--success-color);
+}
+
+.dark-theme .customer-card.inactive {
+  border-top: 4px solid var(--text-muted);
+}
+
+/* Table row borders in dark mode */
+.dark-theme .customers-table tr.lead td:first-child {
+  border-left: 4px solid var(--warning-color);
+}
+
+.dark-theme .customers-table tr.customer td:first-child {
+  border-left: 4px solid var(--success-color);
+}
+
+.dark-theme .customers-table tr.inactive td:first-child {
+  border-left: 4px solid var(--text-muted);
+}
+
+/* Form button styling in dark mode */
+.dark-theme .cancel-btn {
+  background-color: var(--content-bg);
+} 

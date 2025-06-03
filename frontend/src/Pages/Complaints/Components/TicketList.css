@@ -1,0 +1,173 @@
+.ticket-list {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.ticket-list-header {
+  display: flex;
+  background-color: #f8f9fa;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.ticket-header-item {
+  flex: 1;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ticket-list-body {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.ticket-row {
+  display: flex;
+  padding: 16px;
+  border-bottom: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.ticket-row:hover {
+  background-color: #f8f9fa;
+}
+
+.ticket-row:last-child {
+  border-bottom: none;
+}
+
+.ticket-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  color: #212529;
+}
+
+.ticket-id {
+  flex: 0.5;
+  color: #6c757d;
+  font-family: monospace;
+  font-weight: 500;
+}
+
+.ticket-subject {
+  flex: 2.5;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.ticket-priority, .ticket-status {
+  flex: 0.8;
+}
+
+.priority-badge, .status-badge {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Priority styles */
+.priority-critical {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.priority-high {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.priority-medium {
+  background-color: #e1f5fe;
+  color: #0288d1;
+}
+
+.priority-low {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+/* Status styles */
+.status-open {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-progress {
+  background-color: #fff8e1;
+  color: #ffa000;
+}
+
+.status-resolved {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+.status-closed {
+  background-color: #eeeeee;
+  color: #616161;
+}
+
+.assigned-user {
+  display: flex;
+  align-items: center;
+}
+
+.user-initial {
+  width: 28px;
+  height: 28px;
+  background-color: #6c63ff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  margin-right: 8px;
+  font-size: 13px;
+}
+
+.unassigned {
+  color: #9e9e9e;
+  font-style: italic;
+}
+
+.no-tickets {
+  padding: 40px 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.no-tickets p {
+  margin: 5px 0;
+}
+
+.no-tickets-sub {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .ticket-date,
+  .ticket-assigned {
+    display: none;
+  }
+  
+  .ticket-subject {
+    flex: 1.5;
+  }
+} 

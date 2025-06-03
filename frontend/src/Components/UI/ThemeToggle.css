@@ -1,0 +1,49 @@
+.theme-toggle-wrapper {
+  margin: 0 16px;
+}
+
+.theme-toggle-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.theme-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Animation for theme switch */
+.theme-toggle-btn {
+  transform-origin: center;
+}
+
+.theme-toggle-btn:active {
+  transform: scale(0.9);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .theme-toggle-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .theme-icon {
+    width: 20px;
+    height: 20px;
+  }
+} 

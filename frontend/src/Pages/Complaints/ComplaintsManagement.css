@@ -1,0 +1,114 @@
+/* Complaints Management Styles */
+.complaints-content {
+  padding: var(--section-spacing);
+  max-width: 1200px;
+  margin: 0 auto;
+  animation: fadeIn 0.5s ease;
+}
+
+/* Ticket Controls */
+.ticket-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  background-color: var(--card-bg);
+  padding: 16px;
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-sm);
+  align-items: center;
+  border: 1px solid var(--border-light);
+}
+
+.ticket-filters {
+  display: flex;
+  gap: 12px;
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  min-width: 150px;
+}
+
+.create-ticket-btn {
+  padding: 10px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.create-ticket-btn::before {
+  content: "+";
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.create-ticket-btn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+/* Ticket Container */
+.tickets-container {
+  background-color: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: var(--section-spacing);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--section-spacing);
+  border: 1px solid var(--border-light);
+}
+
+/* Loading and Error States */
+.loading-container, 
+.error-container {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.loading-container::before {
+  content: "⏳";
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.error-container::before {
+  content: "⚠️";
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 20px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .ticket-controls {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .ticket-filters {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .filter-select {
+    width: 100%;
+  }
+  
+  .create-ticket-btn {
+    width: 100%;
+    justify-content: center;
+  }
+} 

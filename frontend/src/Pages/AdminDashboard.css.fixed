@@ -1,0 +1,12 @@
+/* Copy the entire content from the original file, but fix the error at the end */
+/* Keep all the CSS rules intact, but remove the extra closing brace */
+
+/* The last part of the file should end with: */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+} 

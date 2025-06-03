@@ -1,0 +1,85 @@
+@import './styles/theme.css';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Base styles for common elements */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* For backwards compatibility - these will be deprecated */
+html[data-theme="dark"] {
+  background-color: var(--background);
+}
+
+/* Components with .dark-theme applied */
+.dark-theme input,
+.dark-theme select,
+.dark-theme textarea {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.dark-theme .sidebar {
+  background-color: var(--sidebar-bg);
+}
+
+.dark-theme .dashboard-header {
+  background-color: var(--header-bg);
+}
+
+.dark-theme .card-bg {
+  background-color: var(--card-bg);
+}
+
+.dark-theme .stat-card,
+.dark-theme .enterprise-card,
+.dark-theme .product-card,
+.dark-theme .team-member-card,
+.dark-theme .project-card,
+.dark-theme .event-card,
+.dark-theme .activity-item,
+.dark-theme .overview-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
