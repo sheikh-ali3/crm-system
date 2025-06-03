@@ -118,26 +118,29 @@ const TicketSchema = new Schema({
 
 // Auto-generate a ticket number before saving
 TicketSchema.pre('save', async function(next) {
-  if (!this.isNew) {
-    return next();
-  }
-  
   try {
+    if (!this.isNew) {
+      return next();
+    }
+
     // Get the current date components
     const date = new Date();
     const year = date.getFullYear().toString().substr(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     
-    // Find the count of tickets for the current month
-    const count = await this.constructor.countDocuments({
-      createdAt: {
-        $gte: new Date(date.getFullYear(), date.getMonth(), 1),
-        $lt: new Date(date.getFullYear(), date.getMonth() + 1, 1)
-      }
-    });
+    // Generate a random number between 1000 and 9999
+    const randomNum = Math.floor(Math.random() * 9000) + 1000;
     
     // Generate the ticket number: TKT-YY-MM-XXXX
-    this.ticketNo = `TKT-${year}-${month}-${(count + 1).toString().padStart(4, '0')}`;
+    this.ticketNo = `TKT-${year}-${month}-${randomNum}`;
+    
+    // Check if this ticket number already exists
+    const existingTicket = await this.constructor.findOne({ ticketNo: this.ticketNo });
+    if (existingTicket) {
+      // If it exists, try again with a different random number
+      return this.save();
+    }
+    
     next();
   } catch (error) {
     next(error);
