@@ -4,7 +4,6 @@ const Schema = mongoose.Schema;
 const TicketSchema = new Schema({
   ticketNo: {
     type: String,
-    required: true,
     unique: true
   },
   adminId: {
@@ -116,35 +115,16 @@ const TicketSchema = new Schema({
   timestamps: true
 });
 
-// Auto-generate a ticket number before saving
-TicketSchema.pre('save', async function(next) {
-  try {
-    if (!this.isNew) {
-      return next();
-    }
-
-    // Get the current date components
+// Generate ticket number before saving
+TicketSchema.pre('validate', function(next) {
+  if (!this.ticketNo) {
     const date = new Date();
     const year = date.getFullYear().toString().substr(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    
-    // Generate a random number between 1000 and 9999
     const randomNum = Math.floor(Math.random() * 9000) + 1000;
-    
-    // Generate the ticket number: TKT-YY-MM-XXXX
     this.ticketNo = `TKT-${year}-${month}-${randomNum}`;
-    
-    // Check if this ticket number already exists
-    const existingTicket = await this.constructor.findOne({ ticketNo: this.ticketNo });
-    if (existingTicket) {
-      // If it exists, try again with a different random number
-      return this.save();
-    }
-    
-    next();
-  } catch (error) {
-    next(error);
   }
+  next();
 });
 
 // Update the updatedAt timestamp before saving
