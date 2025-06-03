@@ -3,8 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const Ticket = require('../models/Ticket');
-const auth = require('../middleware/auth');
-const superAuth = require('../middleware/superAuth');
+const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -24,7 +23,7 @@ const upload = multer({
 });
 
 // Create a new ticket (Admin only)
-router.post('/', auth, upload.array('attachments', 5), async (req, res) => {
+router.post('/', authenticateToken, authorizeRole('admin'), upload.array('attachments', 5), async (req, res) => {
   try {
     const attachments = req.files ? req.files.map(file => ({
       filename: file.originalname,
@@ -33,7 +32,7 @@ router.post('/', auth, upload.array('attachments', 5), async (req, res) => {
     })) : [];
 
     const ticket = new Ticket({
-      adminId: req.user._id,
+      adminId: req.user.id,
       name: req.body.name,
       email: req.body.email,
       subject: req.body.subject,
@@ -51,7 +50,7 @@ router.post('/', auth, upload.array('attachments', 5), async (req, res) => {
 });
 
 // Get all tickets (Superadmin only)
-router.get('/', superAuth, async (req, res) => {
+router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
     const tickets = await Ticket.find()
       .populate('adminId', 'email profile.fullName')
@@ -63,9 +62,9 @@ router.get('/', superAuth, async (req, res) => {
 });
 
 // Get tickets for specific admin
-router.get('/admin', auth, async (req, res) => {
+router.get('/admin', authenticateToken, authorizeRole('admin'), async (req, res) => {
   try {
-    const tickets = await Ticket.find({ adminId: req.user._id })
+    const tickets = await Ticket.find({ adminId: req.user.id })
       .sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
@@ -74,7 +73,7 @@ router.get('/admin', auth, async (req, res) => {
 });
 
 // Add response to ticket (Superadmin only)
-router.post('/:ticketId/responses', superAuth, async (req, res) => {
+router.post('/:ticketId/responses', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.ticketId);
     if (!ticket) {
@@ -93,7 +92,7 @@ router.post('/:ticketId/responses', superAuth, async (req, res) => {
 });
 
 // Update response (Superadmin only)
-router.put('/:ticketId/responses/:responseId', superAuth, async (req, res) => {
+router.put('/:ticketId/responses/:responseId', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.ticketId);
     if (!ticket) {
@@ -116,7 +115,7 @@ router.put('/:ticketId/responses/:responseId', superAuth, async (req, res) => {
 });
 
 // Delete response (Superadmin only)
-router.delete('/:ticketId/responses/:responseId', superAuth, async (req, res) => {
+router.delete('/:ticketId/responses/:responseId', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.ticketId);
     if (!ticket) {

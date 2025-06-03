@@ -7,11 +7,32 @@ const TicketSchema = new Schema({
     required: true,
     unique: true
   },
+  adminId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
+  },
   subject: {
     type: String,
     required: true
   },
-  description: {
+  department: {
+    type: String,
+    required: true
+  },
+  relatedTo: {
+    type: String,
+    required: true
+  },
+  message: {
     type: String,
     required: true
   },
@@ -58,9 +79,9 @@ const TicketSchema = new Schema({
     type: Date
   },
   attachments: [{
-    fileName: String,
-    fileType: String,
-    filePath: String,
+    filename: String,
+    path: String,
+    mimetype: String,
     uploadedAt: {
       type: Date,
       default: Date.now
@@ -77,31 +98,6 @@ const TicketSchema = new Schema({
       default: Date.now
     }
   }],
-  adminId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Admin',
-    required: true
-  },
-  name: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true
-  },
-  department: {
-    type: String,
-    required: true
-  },
-  relatedTo: {
-    type: String,
-    required: true
-  },
-  message: {
-    type: String,
-    required: true
-  },
   responses: [{
     message: {
       type: String,
