@@ -218,10 +218,16 @@ const ComplaintsManagement = () => {
           </div>
         </div>
 
-        {/* Debug: Show raw tickets data */}
+        {/* Debug/Error Section */}
         <div style={{ background: '#f9f9f9', color: '#333', padding: '1rem', margin: '1rem 0', border: '1px solid #ccc', borderRadius: '6px' }}>
           <h4>Debug: Raw Tickets Data</h4>
           <pre style={{ maxHeight: 200, overflow: 'auto', fontSize: 12 }}>{JSON.stringify(tickets, null, 2)}</pre>
+          {error && (
+            <div style={{ color: 'red', marginTop: '1rem' }}>Error: {error}</div>
+          )}
+          {!error && !loading && tickets && tickets.length === 0 && (
+            <div style={{ color: '#888', marginTop: '1rem' }}>No tickets found. (API returned empty array)</div>
+          )}
         </div>
       </div>
     </div>
