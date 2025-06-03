@@ -82,13 +82,14 @@ const ComplaintsManagement = () => {
       const token = localStorage.getItem('token');
       
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/tickets/stats/summary`, 
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tickets/stats`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching ticket stats:', error);
+      // Don't show error to user for stats, just log it
     }
   }, []);
 

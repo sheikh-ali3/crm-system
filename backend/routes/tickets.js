@@ -200,4 +200,32 @@ router.delete('/:ticketId/responses/:responseId', authenticateToken, authorizeRo
   }
 });
 
+// Get ticket statistics
+router.get('/stats', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
+  try {
+    const total = await Ticket.countDocuments();
+    const byStatus = {
+      open: await Ticket.countDocuments({ status: 'Open' }),
+      inProgress: await Ticket.countDocuments({ status: 'In Progress' }),
+      resolved: await Ticket.countDocuments({ status: 'Resolved' }),
+      closed: await Ticket.countDocuments({ status: 'Closed' })
+    };
+    const byPriority = {
+      critical: await Ticket.countDocuments({ priority: 'Critical' }),
+      high: await Ticket.countDocuments({ priority: 'High' }),
+      medium: await Ticket.countDocuments({ priority: 'Medium' }),
+      low: await Ticket.countDocuments({ priority: 'Low' })
+    };
+
+    res.json({
+      total,
+      byStatus,
+      byPriority
+    });
+  } catch (error) {
+    console.error('Error fetching ticket stats:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router; 
