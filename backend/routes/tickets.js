@@ -22,8 +22,8 @@ const upload = multer({
   }
 });
 
-// Create a new ticket (Admin only)
-router.post('/', authenticateToken, authorizeRole('admin'), upload.array('attachments', 5), async (req, res) => {
+// Create a new ticket (Both admin and regular users)
+router.post('/', authenticateToken, upload.array('attachments', 5), async (req, res) => {
   try {
     const attachments = req.files ? req.files.map(file => ({
       filename: file.originalname,
@@ -31,20 +31,29 @@ router.post('/', authenticateToken, authorizeRole('admin'), upload.array('attach
       mimetype: file.mimetype
     })) : [];
 
+    // For regular users, set adminId to their own ID
+    // For admins, they can specify a different adminId if needed
+    const adminId = req.user.role === 'admin' ? (req.body.adminId || req.user.id) : req.user.id;
+
     const ticket = new Ticket({
-      adminId: req.user.id,
+      adminId: adminId,
       name: req.body.name,
       email: req.body.email,
       subject: req.body.subject,
       department: req.body.department,
       relatedTo: req.body.relatedTo,
       message: req.body.message,
-      attachments: attachments
+      attachments: attachments,
+      submittedBy: req.user.id,
+      status: 'Open',
+      priority: req.body.priority || 'Medium',
+      category: req.body.category || 'Other'
     });
 
     await ticket.save();
     res.status(201).json(ticket);
   } catch (error) {
+    console.error('Error creating ticket:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -54,6 +63,7 @@ router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res)
   try {
     const tickets = await Ticket.find()
       .populate('adminId', 'email profile.fullName')
+      .populate('submittedBy', 'email profile.fullName')
       .sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
@@ -65,6 +75,7 @@ router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res)
 router.get('/admin', authenticateToken, authorizeRole('admin'), async (req, res) => {
   try {
     const tickets = await Ticket.find({ adminId: req.user.id })
+      .populate('submittedBy', 'email profile.fullName')
       .sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
