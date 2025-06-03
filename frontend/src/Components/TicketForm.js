@@ -39,6 +39,14 @@ const TicketForm = ({ onClose, onSuccess }) => {
     setError('');
 
     try {
+      // Validate form data
+      const requiredFields = ['name', 'email', 'subject', 'department', 'relatedTo', 'message'];
+      const missingFields = requiredFields.filter(field => !formData[field]);
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
+      }
+
       const formDataToSend = new FormData();
       Object.keys(formData).forEach(key => {
         formDataToSend.append(key, formData[key]);
@@ -55,6 +63,11 @@ const TicketForm = ({ onClose, onSuccess }) => {
 
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       
+      console.log('Submitting ticket with data:', {
+        ...formData,
+        attachmentsCount: attachments.length
+      });
+
       const response = await axios.post(`${apiUrl}/api/tickets`, formDataToSend, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,13 +75,30 @@ const TicketForm = ({ onClose, onSuccess }) => {
         }
       });
 
+      console.log('Ticket submission response:', response.data);
+
       if (response.data) {
         onSuccess();
         onClose();
       }
     } catch (error) {
-      console.error('Ticket submission error:', error);
-      setError(error.response?.data?.message || error.message || 'Failed to submit ticket');
+      console.error('Ticket submission error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
+      let errorMessage = 'Failed to submit ticket';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.details) {
+        errorMessage = error.response.data.details.join(', ');
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -77,7 +107,11 @@ const TicketForm = ({ onClose, onSuccess }) => {
   return (
     <div className="ticket-form-container">
       <h2>Create New Ticket</h2>
-      {error && <div className="error-message">{error}</div>}
+      {error && (
+        <div className="error-message">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">

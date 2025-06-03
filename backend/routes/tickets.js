@@ -25,11 +25,18 @@ const upload = multer({
 // Create a new ticket (Both admin and regular users)
 router.post('/', authenticateToken, upload.array('attachments', 5), async (req, res) => {
   try {
+    console.log('Received ticket creation request:', {
+      body: req.body,
+      files: req.files,
+      user: req.user
+    });
+
     // Validate required fields
     const requiredFields = ['name', 'email', 'subject', 'department', 'relatedTo', 'message'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
     
     if (missingFields.length > 0) {
+      console.log('Missing required fields:', missingFields);
       return res.status(400).json({
         message: `Missing required fields: ${missingFields.join(', ')}`
       });
@@ -45,6 +52,21 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
     // For regular users, set adminId to their own ID
     // For admins, they can specify a different adminId if needed
     const adminId = req.user.role === 'admin' ? (req.body.adminId || req.user.id) : req.user.id;
+
+    console.log('Creating ticket with data:', {
+      adminId,
+      name: req.body.name,
+      email: req.body.email,
+      subject: req.body.subject,
+      department: req.body.department,
+      relatedTo: req.body.relatedTo,
+      message: req.body.message,
+      attachments: attachments.length,
+      submittedBy: req.user.id,
+      status: 'Open',
+      priority: req.body.priority || 'Medium',
+      category: req.body.category || 'Other'
+    });
 
     // Create new ticket
     const ticket = new Ticket({
@@ -64,6 +86,7 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
 
     // Save ticket
     const savedTicket = await ticket.save();
+    console.log('Ticket saved successfully:', savedTicket._id);
     
     // Populate user details
     await savedTicket.populate([
@@ -71,12 +94,18 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
       { path: 'submittedBy', select: 'email profile.fullName' }
     ]);
 
+    console.log('Ticket populated with user details');
     res.status(201).json(savedTicket);
   } catch (error) {
-    console.error('Error creating ticket:', error);
+    console.error('Error creating ticket:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     
     // Handle specific error types
     if (error.name === 'ValidationError') {
+      console.log('Validation error details:', error.errors);
       return res.status(400).json({
         message: 'Validation error',
         details: Object.values(error.errors).map(err => err.message)
@@ -84,6 +113,7 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
     }
     
     if (error.name === 'MongoError' && error.code === 11000) {
+      console.log('Duplicate ticket number error');
       return res.status(400).json({
         message: 'Duplicate ticket number. Please try again.'
       });
