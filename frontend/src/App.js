@@ -14,6 +14,7 @@ import ProductAccess from './Pages/ProductAccess';
 import SuperAdminServicesPage from './Pages/SuperAdminServicesPage';
 import AdminServicesPage from './Pages/AdminServicesPage';
 import { ThemeProvider } from './utils/ThemeContext';
+import ComplaintsManagement from './Pages/Complaints/ComplaintsManagement';
 
 /**
  * App Component - Main routing setup for the CRM application
@@ -48,7 +49,7 @@ const App = () => {
           <Route path="/superadmin/reports" element={<SuperAdminDashboard />} />
           <Route path="/superadmin/expenses" element={<SuperAdminDashboard />} />
           <Route path="/superadmin/receipts" element={<SuperAdminDashboard />} />
-          <Route path="/superadmin/complaints" element={<SuperAdminDashboard />} />
+          <Route path="/superadmin/complaints" element={<ComplaintsManagement />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminDashboard />} />
