@@ -2605,7 +2605,7 @@ const SuperAdminDashboard = () => {
                 </button>
               </div>
               
-              <div className="invoice-stats">
+              <div className="quotation-stats">
                 <div className="stat-card">
                   <h3>Total</h3>
                   <p className="stat-number">{invoiceStats.totalInvoices || 0}</p>
