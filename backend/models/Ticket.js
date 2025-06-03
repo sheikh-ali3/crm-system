@@ -76,6 +76,45 @@ const TicketSchema = new Schema({
       type: Date,
       default: Date.now
     }
+  }],
+  adminId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Admin',
+    required: true
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
+  },
+  department: {
+    type: String,
+    required: true
+  },
+  relatedTo: {
+    type: String,
+    required: true
+  },
+  message: {
+    type: String,
+    required: true
+  },
+  responses: [{
+    message: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    }
   }]
 }, {
   timestamps: true
@@ -107,6 +146,12 @@ TicketSchema.pre('save', async function(next) {
   } catch (error) {
     next(error);
   }
+});
+
+// Update the updatedAt timestamp before saving
+TicketSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
 module.exports = mongoose.model('Ticket', TicketSchema); 

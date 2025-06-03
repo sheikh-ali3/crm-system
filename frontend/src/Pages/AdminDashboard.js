@@ -7,6 +7,7 @@ import ThemeToggle from '../Components/UI/ThemeToggle';
 import AdminSidebar from '../Components/Layout/AdminSidebar';
 import DashboardCard from '../Components/Dashboard/DashboardCard';
 import CustomAlert from '../Components/Common/CustomAlert';
+import TicketForm from '../Components/TicketForm';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -2206,39 +2207,11 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         return (
           <div className="section-container">
             <h1 className="section-title">Create Support Ticket</h1>
-            <form className="ticket-form">
-              <div className="form-group">
-                <label>Title</label>
-                <input type="text" placeholder="Ticket title" />
-                        </div>
-              <div className="form-group">
-                <label>Category</label>
-                <select>
-                  <option value="">Select category</option>
-                  <option value="technical">Technical Issue</option>
-                  <option value="billing">Billing Issue</option>
-                  <option value="feature">Feature Request</option>
-                  <option value="other">Other</option>
-                </select>
-                    </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea placeholder="Describe your issue in detail"></textarea>
-                  </div>
-              <div className="form-group">
-                <label>Priority</label>
-                <select>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-                </div>
-              <button type="button" className="submit-btn" onClick={() => console.log('Submit ticket clicked')}>
-                Submit Ticket
-              </button>
-            </form>
-              </div>
+            <TicketForm 
+              onClose={() => setActiveTab('dashboard')} 
+              onSuccess={() => showAlert('Ticket submitted successfully!', 'success')} 
+            />
+          </div>
         );
       case 'users':
         return (
