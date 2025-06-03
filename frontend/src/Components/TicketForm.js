@@ -48,10 +48,15 @@ const TicketForm = ({ onClose, onSuccess }) => {
       }
 
       const formDataToSend = new FormData();
+      
+      // Add all form fields
       Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key]);
+        if (formData[key]) {
+          formDataToSend.append(key, formData[key]);
+        }
       });
 
+      // Add attachments
       attachments.forEach(file => {
         formDataToSend.append('attachments', file);
       });
@@ -63,6 +68,7 @@ const TicketForm = ({ onClose, onSuccess }) => {
 
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       
+      // Log the data being sent
       console.log('Submitting ticket with data:', {
         ...formData,
         attachmentsCount: attachments.length
@@ -75,9 +81,8 @@ const TicketForm = ({ onClose, onSuccess }) => {
         }
       });
 
-      console.log('Ticket submission response:', response.data);
-
       if (response.data) {
+        console.log('Ticket created successfully:', response.data);
         onSuccess();
         onClose();
       }

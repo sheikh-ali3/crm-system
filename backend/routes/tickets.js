@@ -25,10 +25,11 @@ const upload = multer({
 // Create a new ticket (Both admin and regular users)
 router.post('/', authenticateToken, upload.array('attachments', 5), async (req, res) => {
   try {
+    // Log the incoming request
     console.log('Received ticket creation request:', {
       body: req.body,
-      files: req.files,
-      user: req.user
+      files: req.files ? req.files.length : 0,
+      user: req.user ? { id: req.user.id, role: req.user.role } : null
     });
 
     // Validate required fields
@@ -52,21 +53,6 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
     // For regular users, set adminId to their own ID
     // For admins, they can specify a different adminId if needed
     const adminId = req.user.role === 'admin' ? (req.body.adminId || req.user.id) : req.user.id;
-
-    console.log('Creating ticket with data:', {
-      adminId,
-      name: req.body.name,
-      email: req.body.email,
-      subject: req.body.subject,
-      department: req.body.department,
-      relatedTo: req.body.relatedTo,
-      message: req.body.message,
-      attachments: attachments.length,
-      submittedBy: req.user.id,
-      status: 'Open',
-      priority: req.body.priority || 'Medium',
-      category: req.body.category || 'Other'
-    });
 
     // Create new ticket
     const ticket = new Ticket({
