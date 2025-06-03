@@ -25,6 +25,17 @@ const upload = multer({
 // Create a new ticket (Both admin and regular users)
 router.post('/', authenticateToken, upload.array('attachments', 5), async (req, res) => {
   try {
+    // Validate required fields
+    const requiredFields = ['name', 'email', 'subject', 'department', 'relatedTo', 'message'];
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: `Missing required fields: ${missingFields.join(', ')}`
+      });
+    }
+
+    // Process file attachments
     const attachments = req.files ? req.files.map(file => ({
       filename: file.originalname,
       path: file.path,
@@ -35,6 +46,7 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
     // For admins, they can specify a different adminId if needed
     const adminId = req.user.role === 'admin' ? (req.body.adminId || req.user.id) : req.user.id;
 
+    // Create new ticket
     const ticket = new Ticket({
       adminId: adminId,
       name: req.body.name,
@@ -50,11 +62,37 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
       category: req.body.category || 'Other'
     });
 
-    await ticket.save();
-    res.status(201).json(ticket);
+    // Save ticket
+    const savedTicket = await ticket.save();
+    
+    // Populate user details
+    await savedTicket.populate([
+      { path: 'adminId', select: 'email profile.fullName' },
+      { path: 'submittedBy', select: 'email profile.fullName' }
+    ]);
+
+    res.status(201).json(savedTicket);
   } catch (error) {
     console.error('Error creating ticket:', error);
-    res.status(400).json({ message: error.message });
+    
+    // Handle specific error types
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({
+        message: 'Validation error',
+        details: Object.values(error.errors).map(err => err.message)
+      });
+    }
+    
+    if (error.name === 'MongoError' && error.code === 11000) {
+      return res.status(400).json({
+        message: 'Duplicate ticket number. Please try again.'
+      });
+    }
+
+    res.status(500).json({
+      message: 'Error creating ticket',
+      error: error.message
+    });
   }
 });
 
@@ -67,6 +105,7 @@ router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res)
       .sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
+    console.error('Error fetching tickets:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -79,6 +118,7 @@ router.get('/admin', authenticateToken, authorizeRole('admin'), async (req, res)
       .sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
+    console.error('Error fetching admin tickets:', error);
     res.status(500).json({ message: error.message });
   }
 });
@@ -98,6 +138,7 @@ router.post('/:ticketId/responses', authenticateToken, authorizeRole('superadmin
     await ticket.save();
     res.json(ticket);
   } catch (error) {
+    console.error('Error adding response:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -121,6 +162,7 @@ router.put('/:ticketId/responses/:responseId', authenticateToken, authorizeRole(
     await ticket.save();
     res.json(ticket);
   } catch (error) {
+    console.error('Error updating response:', error);
     res.status(400).json({ message: error.message });
   }
 });
@@ -137,6 +179,7 @@ router.delete('/:ticketId/responses/:responseId', authenticateToken, authorizeRo
     await ticket.save();
     res.json(ticket);
   } catch (error) {
+    console.error('Error deleting response:', error);
     res.status(400).json({ message: error.message });
   }
 });

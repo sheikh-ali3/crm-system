@@ -9,7 +9,9 @@ const TicketForm = ({ onClose, onSuccess }) => {
     subject: '',
     department: '',
     relatedTo: '',
-    message: ''
+    message: '',
+    priority: 'Medium',
+    category: 'Other'
   });
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,19 +49,26 @@ const TicketForm = ({ onClose, onSuccess }) => {
       });
 
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found. Please log in again.');
+      }
+
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       
-      await axios.post(`${apiUrl}/api/tickets`, formDataToSend, {
+      const response = await axios.post(`${apiUrl}/api/tickets`, formDataToSend, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      onSuccess();
-      onClose();
+      if (response.data) {
+        onSuccess();
+        onClose();
+      }
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to submit ticket');
+      console.error('Ticket submission error:', error);
+      setError(error.response?.data?.message || error.message || 'Failed to submit ticket');
     } finally {
       setLoading(false);
     }
@@ -124,6 +133,35 @@ const TicketForm = ({ onClose, onSuccess }) => {
             onChange={handleChange}
             required
           />
+        </div>
+
+        <div className="form-group">
+          <label>Priority</label>
+          <select
+            name="priority"
+            value={formData.priority}
+            onChange={handleChange}
+          >
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Category</label>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+          >
+            <option value="Technical">Technical</option>
+            <option value="Billing">Billing</option>
+            <option value="Product">Product</option>
+            <option value="Service">Service</option>
+            <option value="Other">Other</option>
+          </select>
         </div>
 
         <div className="form-group">
