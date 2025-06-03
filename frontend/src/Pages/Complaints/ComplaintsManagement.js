@@ -64,7 +64,7 @@ const ComplaintsManagement = () => {
       setLoading(true);
       
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/tickets`, 
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tickets`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
