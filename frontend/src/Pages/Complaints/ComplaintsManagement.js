@@ -6,8 +6,6 @@ import SuperAdminSidebar from '../../Components/Layout/SuperAdminSidebar';
 import ThemeToggle from '../../Components/UI/ThemeToggle';
 import TicketList from './Components/TicketList';
 import TicketDetail from './Components/TicketDetail';
-import NewTicketForm from './Components/NewTicketForm';
-import TicketStats from './Components/TicketStats';
 
 const ComplaintsManagement = () => {
   const navigate = useNavigate();
@@ -15,12 +13,7 @@ const ComplaintsManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'new'
-  const [stats, setStats] = useState({
-    total: 0,
-    byStatus: { open: 0, inProgress: 0, resolved: 0, closed: 0 },
-    byPriority: { critical: 0, high: 0, medium: 0, low: 0 }
-  });
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail'
   const [alert, setAlert] = useState({ show: false, message: '', type: 'success' });
   const [currentUser, setCurrentUser] = useState(null);
   const [admins, setAdmins] = useState([]);
@@ -67,29 +60,13 @@ const ComplaintsManagement = () => {
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tickets`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+      console.log('Tickets API response:', response.data);
       setTickets(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching tickets:', error);
       setError('Failed to fetch tickets. Please try again later.');
       setLoading(false);
-    }
-  }, []);
-
-  const fetchTicketStats = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tickets/stats`, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setStats(response.data);
-    } catch (error) {
-      console.error('Error fetching ticket stats:', error);
-      // Don't show error to user for stats, just log it
     }
   }, []);
 
@@ -114,12 +91,11 @@ const ComplaintsManagement = () => {
       const isAuth = await checkAuth();
       if (isAuth) {
         fetchTickets();
-        fetchTicketStats();
       }
     };
     
     initPage();
-  }, [checkAuth, fetchTickets, fetchTicketStats]);
+  }, [checkAuth, fetchTickets]);
 
   useEffect(() => {
     if (currentUser) {
@@ -131,23 +107,6 @@ const ComplaintsManagement = () => {
     setSelectedTicket(ticket);
     setViewMode('detail');
   }, []);
-
-  const handleCreateTicket = useCallback((newTicket) => {
-    showAlert('Ticket created successfully', 'success');
-    fetchTickets();
-    fetchTicketStats();
-    setViewMode('list');
-  }, [fetchTickets, fetchTicketStats, showAlert]);
-
-  const handleUpdateTicket = useCallback((updatedTicket) => {
-    setTickets(prev => 
-      prev.map(ticket => 
-        ticket._id === updatedTicket._id ? updatedTicket : ticket
-      )
-    );
-    showAlert('Ticket updated successfully', 'success');
-    fetchTicketStats();
-  }, [fetchTicketStats, showAlert]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -208,9 +167,6 @@ const ComplaintsManagement = () => {
         
         {/* Content Area */}
         <div className="complaints-content">
-          {/* Ticket Statistics */}
-          <TicketStats stats={stats} />
-          
           {/* Ticket Controls */}
           <div className="ticket-controls">
             <div className="ticket-filters">
@@ -238,13 +194,6 @@ const ComplaintsManagement = () => {
                 <option value="Low">Low</option>
               </select>
             </div>
-            
-            <button 
-              className="create-ticket-btn"
-              onClick={() => setViewMode('new')}
-            >
-              Create New Ticket
-            </button>
           </div>
           
           {/* Tickets View */}
@@ -262,17 +211,8 @@ const ComplaintsManagement = () => {
               <TicketDetail 
                 ticketId={selectedTicket._id} 
                 onBack={() => setViewMode('list')}
-                onUpdate={handleUpdateTicket}
                 currentUser={currentUser}
                 admins={admins}
-              />
-            )}
-            
-            {viewMode === 'new' && (
-              <NewTicketForm 
-                onSubmit={handleCreateTicket}
-                onCancel={() => setViewMode('list')}
-                currentUser={currentUser}
               />
             )}
           </div>

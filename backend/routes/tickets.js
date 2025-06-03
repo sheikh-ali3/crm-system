@@ -115,10 +115,12 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
 // Get all tickets (Superadmin only)
 router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
+    console.log('GET /api/tickets called by user:', req.user);
     const tickets = await Ticket.find()
       .populate('adminId', 'email profile.fullName')
       .populate('submittedBy', 'email profile.fullName')
       .sort({ createdAt: -1 });
+    console.log('Tickets found:', tickets.length);
     res.json(tickets);
   } catch (error) {
     console.error('Error fetching tickets:', error);
