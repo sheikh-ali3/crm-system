@@ -217,6 +217,12 @@ const ComplaintsManagement = () => {
             )}
           </div>
         </div>
+
+        {/* Debug: Show raw tickets data */}
+        <div style={{ background: '#f9f9f9', color: '#333', padding: '1rem', margin: '1rem 0', border: '1px solid #ccc', borderRadius: '6px' }}>
+          <h4>Debug: Raw Tickets Data</h4>
+          <pre style={{ maxHeight: 200, overflow: 'auto', fontSize: 12 }}>{JSON.stringify(tickets, null, 2)}</pre>
+        </div>
       </div>
     </div>
   );
