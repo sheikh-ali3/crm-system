@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const http = require('http');
+const websocketService = require('./services/websocketService');
 const User = require('./models/User');
 const { authenticateToken, authorizeRole, checkCrmAccess } = require('./middleware/authMiddleware');
 const Customer = require('./models/customer');
@@ -95,6 +97,10 @@ const dbConnect = async () => {
 dbConnect();
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize WebSocket server
+websocketService.initialize(server);
 
 // Enable CORS with more permissive settings for development
 app.use(cors({
@@ -2875,210 +2881,6 @@ app.get('/tickets/stats/summary', authenticateToken, async (req, res) => {
 
 // Start the server
 const PORT = process.env.PORT || 5000;
-
-// Create a simple server without alternative port logic to avoid port conflicts
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`API Status: http://localhost:${PORT}/api/status`);
-  console.log(`Superadmin login: http://localhost:${PORT}/superadmin/login (use superadmin@example.com / superadmin123)`);
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
-
-// Add error handling for the server
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Please choose a different port.`);
-    process.exit(1);
-  } else {
-    console.error('Server error:', error);
-  }
-});
-
-// Add these routes with the other admin routes
-
-// HRMS Routes
-app.get('/api/hrms/summary', authenticateToken, async (req, res) => {
-  try {
-    // Return mock data for now
-    res.json({
-      totalEmployees: 42,
-      departments: 5,
-      activeRecruitments: 3,
-      pendingLeaveRequests: 2
-    });
-  } catch (error) {
-    console.error('Error fetching HRMS data:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Job Portal Routes
-app.get('/api/job-portal/summary', authenticateToken, async (req, res) => {
-  try {
-    // Return mock data for now
-    res.json({
-      activeJobs: 8,
-      totalApplications: 56,
-      interviewsScheduled: 12,
-      newApplications: 7
-    });
-  } catch (error) {
-    console.error('Error fetching job portal data:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Job Board Routes
-app.get('/api/job-board/summary', authenticateToken, async (req, res) => {
-  try {
-    // Return mock data for now
-    res.json({
-      postedJobs: 15,
-      totalViews: 1250,
-      applications: 76,
-      savedJobs: 34
-    });
-  } catch (error) {
-    console.error('Error fetching job board data:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Project Management Routes
-app.get('/api/projects/summary', authenticateToken, async (req, res) => {
-  try {
-    // Return mock data for now
-    res.json({
-      activeProjects: 7,
-      completedProjects: 12,
-      pendingTasks: 24,
-      teamMembers: 18
-    });
-  } catch (error) {
-    console.error('Error fetching project data:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Services Routes
-app.get('/api/services', authenticateToken, async (req, res) => {
-  try {
-    // Check if using mock database
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('./utils/mockDb');
-      const services = mockDb.find('services', { active: true });
-      return res.json(services);
-    }
-    
-    // If using real database
-    const services = await Service.find({ active: true }).sort({ createdAt: -1 });
-    res.json(services);
-  } catch (error) {
-    console.error('Error fetching services:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Quotations Routes
-app.get('/api/quotations', authenticateToken, async (req, res) => {
-  try {
-    const Quotation = require('./models/quotationModel');
-    const quotations = await Quotation.find()
-      .populate('serviceId')
-      .sort({ createdAt: -1 });
-    res.json(quotations);
-  } catch (error) {
-    console.error('Error fetching quotations:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Request a quotation for a service
-app.post('/api/services/:serviceId/quotation', authenticateToken, async (req, res) => {
-  try {
-    const { serviceId } = req.params;
-    const { requestDetails, customRequirements, requestedPrice, enterpriseDetails } = req.body;
-    const Quotation = require('./models/quotationModel');
-    const Service = require('./models/serviceModel');
-
-    // Validate service existence
-    const service = await Service.findById(serviceId);
-    if (!service) {
-      return res.status(404).json({ message: 'Service not found' });
-    }
-
-    // Create and save the quotation
-    const newQuotation = new Quotation({
-      serviceId,
-      adminId: req.user.id, // assuming req.user is set by your auth middleware
-      requestDetails,
-      customRequirements,
-      requestedPrice,
-      enterpriseDetails,
-      status: 'pending'
-    });
-
-    const savedQuotation = await newQuotation.save();
-    res.status(201).json(savedQuotation);
-  } catch (error) {
-    console.error('Error creating quotation:', error);
-    res.status(500).json({ message: 'Failed to create quotation', error: error.message });
-  }
-});
-
-// Reports Routes - Added to fix 404 error
-app.get('/api/reports/summary', authenticateToken, async (req, res) => {
-  try {
-    console.log('Reports summary requested by user:', req.user.id);
-    
-    // Mock reports summary
-    res.json({
-      revenue: {
-        monthly: 45000,
-        quarterly: 135000,
-        yearly: 520000
-      },
-      customers: {
-        total: 78,
-        new: 12,
-        returning: 66
-      },
-      services: {
-        popular: 'Web Development',
-        growth: 15
-      },
-      performance: {
-        completedProjects: 42,
-        ongoingProjects: 12,
-        delay: 5
-      },
-      timestamp: new Date()
-    });
-  } catch (error) {
-    console.error('Error fetching reports:', error);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      success: false
-    });
-  }
-});
-
-// Delete quotation
-app.delete('/api/quotations/:id', authenticateToken, async (req, res) => {
-  try {
-    const Quotation = require('./models/quotationModel');
-    const quotation = await Quotation.findById(req.params.id);
-    
-    if (!quotation) {
-      return res.status(404).json({ message: 'Quotation not found' });
-    }
-    
-    await Quotation.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Quotation deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting quotation:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

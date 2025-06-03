@@ -5,6 +5,8 @@ import './styles/ServicesPage.css';
 import SuperAdminSidebar from '../Components/Layout/SuperAdminSidebar';
 import ThemeToggle from '../Components/UI/ThemeToggle';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { fetchServices, createService, updateService, deleteService } from '../services/api';
+import CustomAlert from '../Components/Common/CustomAlert';
 
 const SuperAdminServicesPage = () => {
   const navigate = useNavigate();
@@ -200,52 +202,24 @@ const SuperAdminServicesPage = () => {
   };
 
   // Fetch services
-  const fetchServices = async () => {
+  const fetchServicesData = async () => {
     try {
       console.log("Fetching services...");
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        console.log("No token found, cannot fetch services");
-        return [];
-      }
-      
-      const response = await apiClient.get('/services/superadmin');
+      const response = await fetchServices();
       console.log("Services fetched:", response);
       
-      // Check if response is an array directly
       if (Array.isArray(response)) {
         setServices(response);
-        return response;
-      }
-      
-      // Check if response contains a service property or data property
-      if (response && response.service) {
-        setServices(Array.isArray(response.service) ? response.service : [response.service]);
-        return response.service;
       } else if (response && response.data) {
         setServices(Array.isArray(response.data) ? response.data : [response.data]);
-        return response.data;
-      } else if (response && response.message && response.service) {
-        // Handle case where response has message and service object
-        setServices(Array.isArray(response.service) ? response.service : [response.service]);
-        return response.service;
       } else {
-        // If response is an object but not in expected format, check if it can be treated as a service
-        if (response && response._id) {
-          setServices([response]);
-          return [response];
-        }
-        
         console.warn("Unexpected API response format:", response);
         setServices([]);
-        return [];
       }
     } catch (error) {
       console.error("Error fetching services:", error);
       showAlert("Failed to load services. Please try again later.", "error");
       setServices([]);
-      return [];
     }
   };
 
@@ -342,122 +316,43 @@ const SuperAdminServicesPage = () => {
     }
   };
 
-  // Create a new service
-  const handleCreateService = async (e) => {
-    e.preventDefault();
+  // Create service
+  const handleCreateService = async (serviceData) => {
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showAlert('No authentication token found. Please login again.', 'error');
-        navigate('/superadmin/login');
-        return;
-      }
-
-      // Validate form
-      if (!serviceForm.name || !serviceForm.description || !serviceForm.price) {
-        showAlert('Please fill out all required fields', 'error');
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await apiClient.post('/services/superadmin', serviceForm);
-      console.log('Create service response:', response);
-      
-      // Extract the created service from the response
-      let createdService = null;
-      if (response && response.service) {
-        createdService = response.service;
-      } else if (response && response.data) {
-        createdService = response.data;
-      }
-      
-      if (createdService) {
-        console.log('Service created:', createdService);
-        
-        // Update the services state with the new service
-        setServices(prevServices => {
-          // Ensure prevServices is an array
-          const servicesArray = Array.isArray(prevServices) ? prevServices : [];
-          return [createdService, ...servicesArray];
-        });
-      }
-      
-      showAlert('Service created successfully', 'success');
-      setOpenServiceForm(false);
-      resetServiceForm();
-      
-      // Refresh services and stats to ensure everything is up to date
-      fetchServices();
-      fetchServiceStats();
+      const response = await createService(serviceData);
+      showAlert("Service created successfully", "success");
+      fetchServicesData();
+      return response;
     } catch (error) {
-      console.error('Create service error:', error);
-      showAlert('Failed to create service', 'error');
-    } finally {
-      setIsLoading(false);
+      console.error("Error creating service:", error);
+      showAlert("Failed to create service. Please try again.", "error");
+      throw error;
     }
   };
 
-  // Update a service
-  const handleUpdateService = async (e) => {
-    e.preventDefault();
+  // Update service
+  const handleUpdateService = async (serviceId, serviceData) => {
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showAlert('No authentication token found. Please login again.', 'error');
-        navigate('/superadmin/login');
-        return;
-      }
-
-      if (!editingService || !editingService._id) {
-        showAlert('Invalid service selected for editing', 'error');
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await apiClient.put(`/services/superadmin/${editingService._id}`, serviceForm);
-      console.log('Update service response:', response);
-      
-      showAlert('Service updated successfully', 'success');
-      setOpenServiceForm(false);
-      setEditingService(null);
-      resetServiceForm();
-      fetchServices();
+      const response = await updateService(serviceId, serviceData);
+      showAlert("Service updated successfully", "success");
+      fetchServicesData();
+      return response;
     } catch (error) {
-      console.error('Update service error:', error);
-      showAlert('Failed to update service', 'error');
-    } finally {
-      setIsLoading(false);
+      console.error("Error updating service:", error);
+      showAlert("Failed to update service. Please try again.", "error");
+      throw error;
     }
   };
 
-  // Delete a service
+  // Delete service
   const handleDeleteService = async (serviceId) => {
-    if (!window.confirm('Are you sure you want to delete this service?')) {
-      return;
-    }
-    
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showAlert('No authentication token found. Please login again.', 'error');
-        navigate('/superadmin/login');
-        return;
-      }
-
-      const response = await apiClient.delete(`/services/superadmin/${serviceId}`);
-      console.log('Delete service response:', response);
-      
-      showAlert('Service deleted successfully', 'success');
-      fetchServices();
-      fetchServiceStats();
+      await deleteService(serviceId);
+      showAlert("Service deleted successfully", "success");
+      fetchServicesData();
     } catch (error) {
-      console.error('Delete service error:', error);
-      showAlert('Failed to delete service', 'error');
-    } finally {
-      setIsLoading(false);
+      console.error("Error deleting service:", error);
+      showAlert("Failed to delete service. Please try again.", "error");
     }
   };
 
@@ -583,6 +478,52 @@ const SuperAdminServicesPage = () => {
     setOpenQuotationForm(true);
   };
 
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      
+      // Validate form
+      if (!serviceForm.name || !serviceForm.description || !serviceForm.price) {
+        showAlert('Please fill out all required fields', 'error');
+        return;
+      }
+
+      if (editingService) {
+        await handleUpdateService(editingService._id, serviceForm);
+      } else {
+        await handleCreateService(serviceForm);
+      }
+
+      setOpenServiceForm(false);
+      setEditingService(null);
+      resetServiceForm();
+    } catch (error) {
+      console.error('Form submission error:', error);
+      showAlert(error.response?.data?.message || 'Failed to save service', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = async (serviceId) => {
+    if (!window.confirm('Are you sure you want to delete this service?')) {
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      await handleDeleteService(serviceId);
+    } catch (error) {
+      console.error('Delete error:', error);
+      showAlert(error.response?.data?.message || 'Failed to delete service', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Initialize component
   useEffect(() => {
     const initialize = async () => {
@@ -599,7 +540,7 @@ const SuperAdminServicesPage = () => {
         }
         
         // Load services first
-        await fetchServices();
+        await fetchServicesData();
         
         // Load other data with a slight delay to prevent connection issues
         setTimeout(async () => {
@@ -781,7 +722,7 @@ const SuperAdminServicesPage = () => {
                                 </button>
                                 <button 
                                   className="btn-icon delete" 
-                                  onClick={() => handleDeleteService(service._id)}
+                                  onClick={() => handleDeleteConfirm(service._id)}
                                   title="Delete Service"
                                 >
                                   <i className="fas fa-trash"></i>
@@ -901,7 +842,7 @@ const SuperAdminServicesPage = () => {
                 ×
               </button>
             </div>
-            <form onSubmit={editingService ? handleUpdateService : handleCreateService} className="service-form">
+            <form onSubmit={handleSubmit} className="service-form">
               <div className="form-group">
                 <label>Service Name <span className="required">*</span></label>
                 <input 
