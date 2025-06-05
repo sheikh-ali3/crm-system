@@ -6,6 +6,78 @@
   animation: fadeIn 0.5s ease;
 }
 
+/* React Modal Custom Styles */
+.Overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75); /* Semi-transparent dark background */
+  z-index: 1000; /* Ensure it's above other content */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.Modal {
+  position: absolute; /* Positioned within the flex container (.Overlay) */
+  background: var(--card-bg); /* Use a background color */
+  padding: 30px; /* Add some padding */
+  border-radius: var(--card-radius); /* Rounded corners */
+  outline: none; /* Remove default outline */
+  max-width: 600px; /* Limit the width */
+  width: 90%; /* Make it responsive */
+  max-height: 80vh; /* Limit max height */
+  overflow-y: auto; /* Add scroll if content overflows */
+  box-shadow: var(--shadow-lg); /* Add a shadow */
+  z-index: 1001; /* Ensure modal content is above the overlay */
+}
+
+/* Add styles for form elements inside the modal if needed */
+.modal-content .form-group {
+  margin-bottom: 15px;
+}
+
+.modal-content label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.modal-content .form-control {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.modal-content .modal-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-content .btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.modal-content .btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.modal-content .btn-outline {
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
 /* Ticket Controls */
 .ticket-controls {
   display: flex;
