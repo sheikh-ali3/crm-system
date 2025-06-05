@@ -74,7 +74,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'Quotation not found' });
     }
 
-    await quotation.remove();
+    await Quotation.findByIdAndDelete(req.params.id);
     res.json({ message: 'Quotation deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
