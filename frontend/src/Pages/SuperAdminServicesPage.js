@@ -184,10 +184,12 @@ const SuperAdminServicesPage = () => {
         return false;
       }
       
-      const response = await apiClient.get('/status');
+      // Use a valid endpoint that exists in your backend
+      const response = await apiClient.get('/services/superadmin');
       console.log("Auth check response:", response);
       
-      if (response && response.authenticated) {
+      // If we get a successful response, we're authenticated
+      if (response) {
         return true;
       } else {
         console.log("Authentication failed, redirecting to login");
@@ -196,7 +198,14 @@ const SuperAdminServicesPage = () => {
       }
     } catch (error) {
       console.error("Error checking authentication:", error);
-      showAlert("Authentication error. Please try again.", "error");
+      // Handle specific error cases
+      if (error.status === 401 || error.status === 403) {
+        console.log("Authentication token expired or invalid");
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else {
+        showAlert("Authentication error. Please try again.", "error");
+      }
       return false;
     }
   };
@@ -242,21 +251,37 @@ const SuperAdminServicesPage = () => {
         console.log("No token found, cannot fetch quotations");
         return [];
       }
-      // Use the correct backend endpoint
-      const response = await apiClient.get('/quotations', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      // Always use response.data if it exists, otherwise use response
-      const data = response.data ? response.data : response;
-      if (Array.isArray(data)) {
-        setQuotations(data);
-        return data;
+      
+      // Use the correct API endpoint from serviceRoutes.js
+      const response = await apiClient.get('/services/superadmin/quotations');
+      console.log("Quotations API response:", response);
+      
+      // Ensure we're working with an array of quotations
+      const quotationsData = Array.isArray(response) ? response : 
+                           Array.isArray(response.data) ? response.data : [];
+      
+      if (quotationsData.length === 0) {
+        console.log("No quotations found");
       }
-      setQuotations([]);
-      return [];
+      
+      setQuotations(quotationsData);
+      return quotationsData;
     } catch (error) {
       console.error("Error fetching quotations:", error);
-      showAlert("Failed to load quotations. Please try again later.", "error");
+      // Handle specific error cases
+      if (error.status === 401 || error.status === 403) {
+        console.log("Authentication token expired or invalid");
+        localStorage.removeItem('token');
+        navigate('/login');
+      } else if (error.status === 404) {
+        console.log("Quotations endpoint not found");
+        showAlert("Unable to load quotations. Please try again later.", "error");
+      } else if (error.status === 500) {
+        console.log("Server error while fetching quotations");
+        showAlert("Server error. Please try again later.", "error");
+      } else {
+        showAlert("Failed to load quotations. Please try again later.", "error");
+      }
       setQuotations([]);
       return [];
     }
@@ -384,6 +409,7 @@ const SuperAdminServicesPage = () => {
         return;
       }
 
+      // Use the correct API endpoint from serviceRoutes.js
       const response = await apiClient.put(`/services/superadmin/quotations/${selectedQuotation._id}`, quotationForm);
       console.log('Update quotation response:', response);
       
@@ -395,7 +421,11 @@ const SuperAdminServicesPage = () => {
       fetchServiceStats();
     } catch (error) {
       console.error('Update quotation error:', error);
-      showAlert('Failed to update quotation', 'error');
+      if (error.status === 500) {
+        showAlert('Server error while updating quotation. Please try again later.', 'error');
+      } else {
+        showAlert('Failed to update quotation', 'error');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -556,12 +586,23 @@ const SuperAdminServicesPage = () => {
         setTimeout(async () => {
           try {
             // Load stats and quotations in parallel
-            await Promise.allSettled([
+            const [statsResult, quotationsResult] = await Promise.allSettled([
               fetchServiceStats(),
               fetchQuotations()
             ]);
+            
+            // Check for errors in the results
+            if (statsResult.status === 'rejected') {
+              console.error("Error loading stats:", statsResult.reason);
+              showAlert("Error loading statistics. Please refresh the page.", "error");
+            }
+            if (quotationsResult.status === 'rejected') {
+              console.error("Error loading quotations:", quotationsResult.reason);
+              showAlert("Error loading quotations. Please refresh the page.", "error");
+            }
           } catch (error) {
             console.error("Error loading additional data:", error);
+            showAlert("Error loading data. Please refresh the page.", "error");
           } finally {
             setIsLoading(false);
           }
@@ -775,7 +816,6 @@ const SuperAdminServicesPage = () => {
               </div>
               
               <div className="quotations-list">
-                {(() => { console.log('Quotations array:', quotations); return null; })()}
                 {quotations.length === 0 ? (
                   <div className="no-data-container">
                     <p>No quotation requests found.</p>
@@ -785,9 +825,11 @@ const SuperAdminServicesPage = () => {
                     <table>
                       <thead>
                         <tr>
+                          <th>Quotation #</th>
                           <th>Service</th>
                           <th>Admin</th>
                           <th>Enterprise</th>
+                          <th>Amount</th>
                           <th>Requested On</th>
                           <th>Status</th>
                           <th>Actions</th>
@@ -796,9 +838,16 @@ const SuperAdminServicesPage = () => {
                       <tbody>
                         {quotations.map((quotation) => (
                           <tr key={quotation._id} className={quotation.status === 'pending' ? 'highlight-row' : ''}>
+                            <td>{quotation.quotationNumber || (quotation._id ? quotation._id.slice(-6) : 'N/A')}</td>
                             <td>{quotation.serviceId?.name || 'Unknown Service'}</td>
                             <td>{quotation.adminId?.email || 'Unknown Admin'}</td>
                             <td>{quotation.enterpriseDetails?.companyName || quotation.adminId?.profile?.fullName || 'Unknown Enterprise'}</td>
+                            <td>{`$${(
+                              quotation.finalPrice ??
+                              quotation.requestedPrice ??
+                              quotation.serviceId?.price ??
+                              0
+                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
                             <td>{new Date(quotation.createdAt).toLocaleDateString()}</td>
                             <td>
                               <span className={`status-badge ${quotation.status}`}>
