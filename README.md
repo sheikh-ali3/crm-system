@@ -87,7 +87,7 @@ This CRM system provides functionality for managing customer relationships, admi
    ```bash
    # Backend (in backend directory)
    cd backend
-   npm start
+   npm run dev
 
    # Frontend (in frontend directory, in a separate terminal)
    cd frontend
