@@ -1826,7 +1826,10 @@ const SuperAdminDashboard = () => {
       }
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       await axios.delete(`${apiUrl}/api/quotations/${quotationId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       setQuotations(prevQuotations => prevQuotations.filter(q => q._id !== quotationId));
       showAlert('Quotation deleted successfully', 'success');
@@ -2341,6 +2344,56 @@ const SuperAdminDashboard = () => {
     };
   }, []);
 
+  // Add this function near the other handlers
+  const handleUpdateQuotation = async (e) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showAlert('No authentication token found. Please login again.', 'error');
+        navigate('/superadmin/login');
+        return;
+      }
+      if (!selectedQuotation || !selectedQuotation._id) {
+        showAlert('Invalid quotation selected', 'error');
+        setIsLoading(false);
+        return;
+      }
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await axios.put(
+        `${apiUrl}/services/superadmin/quotations/${selectedQuotation._id}`,
+        quotationForm,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      showAlert('Quotation updated successfully', 'success');
+      setOpenQuotationForm(false);
+      setSelectedQuotation(null);
+      setQuotationForm({
+        status: 'pending',
+        finalPrice: '',
+        superadminNotes: '',
+        proposedDeliveryDate: '',
+        rejectionReason: ''
+      });
+      fetchQuotations();
+    } catch (error) {
+      console.error('Update quotation error:', error);
+      if (error.response?.status === 500) {
+        showAlert('Server error while updating quotation. Please try again later.', 'error');
+      } else {
+        showAlert('Failed to update quotation', 'error');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="dashboard-layout">
       <SuperAdminSidebar 
@@ -2847,9 +2900,8 @@ const SuperAdminDashboard = () => {
                               </span>
                             </td>
                             <td>
-                              <button
-                                className="btn-secondary"
-                                style={{ marginRight: 8 }}
+                              <button 
+                                className="btn-view" 
                                 onClick={() => {
                                   setViewQuotation(quotation);
                                   setOpenQuotationViewModal(true);
@@ -2858,10 +2910,16 @@ const SuperAdminDashboard = () => {
                                 View
                               </button>
                               <button 
-                                className="btn-primary"
+                                className="btn-manage" 
                                 onClick={() => handleQuotationClick(quotation)}
                               >
                                 Manage
+                              </button>
+                              <button 
+                                className="btn-delete" 
+                                onClick={() => handleDeleteQuotation(quotation._id)}
+                              >
+                                Delete
                               </button>
                             </td>
                           </tr>
@@ -3888,7 +3946,7 @@ const SuperAdminDashboard = () => {
                 )}
               </div>
             </div>
-            <form /* onSubmit={handleUpdateQuotation} */ className="quotation-form">
+            <form onSubmit={handleUpdateQuotation} className="quotation-form">
               <div className="form-group">
                 <label>Status</label>
                 <select 
