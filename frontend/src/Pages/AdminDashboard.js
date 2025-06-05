@@ -199,12 +199,6 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
   };
 
   const checkAuth = useCallback(async () => {
-    // Check if we're in internal navigation mode
-    if (localStorage.getItem('internalNavigation')) {
-      console.log('Internal navigation detected, skipping auth check');
-      return true;
-    }
-
     const token = localStorage.getItem('token');
     if (!token) {
       console.log('No token found, redirecting to login');
@@ -230,28 +224,28 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         // Store permissions for conditional rendering
         setUserPermissions(response.data.user.permissions || {});
         console.log('User permissions:', response.data.user.permissions);
-      } else {
-        throw new Error('No user data received');
-      }
-      
-      if (response.data.message === 'Authenticated as admin') {
-        console.log('Successfully verified as admin');
+        // Set session persistence
+        localStorage.setItem('sessionPersist', 'true');
         return true;
       } else {
-        throw new Error('Authentication failed');
+        throw new Error('No user data received');
       }
     } catch (error) {
       console.error('Auth error:', error.response?.data || error.message);
       
-      // Only show error and redirect if not in internal navigation
-      if (!localStorage.getItem('internalNavigation')) {
-      showAlert(error.response?.data?.message || 'Authentication failed', 'error');
-      localStorage.removeItem('token');
-      navigate('/login');
+      // Only redirect to login if the error is not a network error or server error
+      if (error.response?.status === 401) {
+        showAlert('Session expired. Please login again.', 'error');
+        localStorage.removeItem('token');
+        localStorage.removeItem('sessionPersist');
+        navigate('/login');
+      } else {
+        // For other errors, keep the user logged in and show an error message
+        showAlert('Unable to verify session. Please try again.', 'error');
       }
       return false;
     }
-  }, [navigate, showAlert]);
+  }, [navigate]);
 
   const fetchUsers = useCallback(async () => {
     try {
