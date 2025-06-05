@@ -275,6 +275,26 @@ router.delete('/:ticketId/responses/:responseId', authenticateToken, authorizeRo
   }
 });
 
+// Delete a ticket by ID (Superadmin only)
+router.delete('/:id', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const ticket = await Ticket.findById(id);
+
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    await Ticket.findByIdAndDelete(id);
+
+    res.json({ message: 'Ticket deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting ticket:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Get ticket statistics
 router.get('/stats', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
