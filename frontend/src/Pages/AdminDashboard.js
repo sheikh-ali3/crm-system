@@ -7,11 +7,8 @@ import ThemeToggle from '../Components/UI/ThemeToggle';
 import AdminSidebar from '../Components/Layout/AdminSidebar';
 import DashboardCard from '../Components/Dashboard/DashboardCard';
 import CustomAlert from '../Components/Common/CustomAlert';
-<<<<<<< HEAD
 import TicketForm from '../Components/TicketForm';
-=======
 import websocketService from '../services/websocketService';
->>>>>>> 7942b572bb21dc66e6cb47a1b57516c4fc3462b9
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
