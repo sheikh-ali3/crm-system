@@ -203,4 +203,177 @@
   .ticket-form .cancel-btn {
     width: 100%;
   }
+}
+
+/* Ticket Detail View */
+.ticket-detail {
+  background-color: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+}
+
+.ticket-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.back-btn {
+  padding: 8px 16px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+}
+
+.back-btn:hover {
+  background-color: var(--border-light);
+}
+
+.ticket-info {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: var(--bg-light);
+  border-radius: 8px;
+}
+
+.ticket-info h4 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+.ticket-info p {
+  margin: 8px 0;
+  color: var(--text-secondary);
+}
+
+.ticket-info strong {
+  color: var(--text-primary);
+  margin-right: 8px;
+}
+
+/* Responses Section */
+.ticket-responses {
+  margin-bottom: 24px;
+}
+
+.ticket-responses h4 {
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.response-item {
+  background-color: var(--bg-light);
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.response-item p {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.response-item small {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+/* Add Response Form */
+.add-response {
+  background-color: var(--bg-light);
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.add-response h4 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+}
+
+.add-response textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  resize: vertical;
+  margin-bottom: 16px;
+}
+
+.add-response textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.add-response .submit-btn {
+  padding: 10px 20px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+}
+
+.add-response .submit-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.add-response .submit-btn:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+}
+
+/* Ticket List Table */
+.ticket-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 24px;
+  background-color: var(--card-bg);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+.ticket-list-table th,
+.ticket-list-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.ticket-list-table th {
+  background-color: var(--bg-light);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.ticket-list-table tr:hover {
+  background-color: var(--bg-light);
+}
+
+.ticket-list-table td {
+  color: var(--text-secondary);
+}
+
+/* Loading and Error States */
+.loading,
+.error {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+}
+
+.error {
+  color: var(--error-color);
 } 

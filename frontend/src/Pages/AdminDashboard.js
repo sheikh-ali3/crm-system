@@ -119,6 +119,15 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
   const [showQuotationForm, setShowQuotationForm] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [tickets, setTickets] = useState([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [ticketsError, setTicketsError] = useState(null);
+  const [showCreateTicketForm, setShowCreateTicketForm] = useState(false);
+  const [ticketForm, setTicketForm] = useState({
+    subject: '',
+    category: '',
+    description: '',
+    priority: 'Low'
+  });
   const [alertConfig, setAlertConfig] = useState({ show: false, message: '', type: 'info' });
   const [openQuotationDialog, setOpenQuotationDialog] = useState(false);
   const [editingQuotation, setEditingQuotation] = useState(null);
@@ -131,16 +140,6 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     description: '',
     budget: 0
   });
-  // Add state for ticket form fields
-  const [ticketForm, setTicketForm] = useState({
-    subject: '',
-    category: '',
-    description: '',
-    priority: 'low',
-  });
-  const [showCreateTicketForm, setShowCreateTicketForm] = useState(false);
-  const [ticketsLoading, setTicketsLoading] = useState(false);
-  const [ticketsError, setTicketsError] = useState(null);
 
   // Initialize checking authentication
   useEffect(() => {
@@ -1047,7 +1046,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                   </div>
               <div 
                 className="dashboard-card"
-                onClick={() => handleNavigate('createTicket')}
+                onClick={() => handleNavigate('tickets')}
               >
                 <div className="card-icon">🎫</div>
                 <h3>Complains/Help</h3>
@@ -2211,14 +2210,56 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                             </div>
                           </div>
         );
-      case 'createTicket':
+      case 'tickets':
         return (
           <div className="section-container">
-            <h1 className="section-title">Create Support Ticket</h1>
-            <TicketForm 
-              onClose={() => setActiveTab('dashboard')} 
-              onSuccess={() => showAlert('Ticket submitted successfully!', 'success')} 
-            />
+            <h1 className="section-title">Tickets</h1>
+            <div className="ticket-controls">
+              <button 
+                className="create-btn" 
+                onClick={() => setShowCreateTicketForm(true)}
+                style={{ display: showCreateTicketForm ? 'none' : 'block' }}
+              >
+                Create New Ticket
+              </button>
+            </div>
+            {showCreateTicketForm && (
+              <TicketForm
+                onClose={() => setShowCreateTicketForm(false)}
+                onSuccess={fetchTickets}
+              />
+            )}
+            
+            {ticketsLoading ? (
+              <div>Loading tickets...</div>
+            ) : ticketsError ? (
+              <div style={{ color: 'red' }}>{ticketsError}</div>
+            ) : tickets.length === 0 ? (
+              <div>No tickets found.</div>
+            ) : (
+              <table className="ticket-list-table">
+                <thead>
+                  <tr>
+                    <th>Ticket No</th>
+                    <th>Subject</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Created On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tickets.map(ticket => (
+                    <tr key={ticket._id}>
+                      <td>{ticket.ticketNo || 'TKT-000'}</td>
+                      <td>{ticket.subject}</td>
+                      <td>{ticket.priority}</td>
+                      <td>{ticket.status}</td>
+                      <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         );
       case 'users':
@@ -2289,127 +2330,6 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
               </div>
             </div>
             </div>
-        );
-      case 'tickets':
-        return (
-          <div className="section-container">
-            <h1 className="section-title">Tickets</h1>
-            <div className="ticket-controls">
-              <button 
-                className="create-btn" 
-                onClick={() => setShowCreateTicketForm(true)}
-                style={{ display: showCreateTicketForm ? 'none' : 'block' }}
-              >
-                Create New Ticket
-              </button>
-            </div>
-            {showCreateTicketForm && (
-              <form className="ticket-form" onSubmit={e => e.preventDefault()} style={{ marginTop: 24 }}>
-                <div className="form-group">
-                  <label>Title</label>
-                  <input
-                    type="text"
-                    name="subject"
-                    value={ticketForm.subject}
-                    onChange={handleTicketFormChange}
-                    placeholder="Ticket title"
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Category</label>
-                  <select
-                    name="category"
-                    value={ticketForm.category}
-                    onChange={handleTicketFormChange}
-                    required
-                  >
-                    <option value="">Select category</option>
-                    <option value="Technical">Technical Issue</option>
-                    <option value="Billing">Billing Issue</option>
-                    <option value="Product">Product</option>
-                    <option value="Service">Service</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Description</label>
-                  <textarea
-                    name="description"
-                    value={ticketForm.description}
-                    onChange={handleTicketFormChange}
-                    placeholder="Describe your issue in detail"
-                    required
-                  ></textarea>
-                </div>
-                <div className="form-group">
-                  <label>Priority</label>
-                  <select
-                    name="priority"
-                    value={ticketForm.priority}
-                    onChange={handleTicketFormChange}
-                    required
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Critical">Critical</option>
-                  </select>
-                </div>
-                <div className="form-actions">
-                  <button type="button" className="submit-btn" onClick={handleSubmitTicket}>
-                    Submit Ticket
-                  </button>
-                  <button 
-                    type="button" 
-                    className="cancel-btn" 
-                    onClick={() => {
-                      setShowCreateTicketForm(false);
-                      setTicketForm({
-                        subject: '',
-                        category: '',
-                        description: '',
-                        priority: 'Low'
-                      });
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-            
-            {ticketsLoading ? (
-              <div>Loading tickets...</div>
-            ) : ticketsError ? (
-              <div style={{ color: 'red' }}>{ticketsError}</div>
-            ) : tickets.length === 0 ? (
-              <div>No tickets found.</div>
-            ) : (
-              <table className="ticket-list-table">
-                <thead>
-                  <tr>
-                    <th>Ticket No</th>
-                    <th>Subject</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Created On</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tickets.map(ticket => (
-                    <tr key={ticket._id}>
-                      <td>{ticket.ticketNo || 'TKT-000'}</td>
-                      <td>{ticket.subject}</td>
-                      <td>{ticket.priority}</td>
-                      <td>{ticket.status}</td>
-                      <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
         );
       default:
         return <div>Select a tab from the sidebar</div>;
@@ -2964,11 +2884,15 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           category: ticketForm.category,
           description: ticketForm.description,
           priority: ticketForm.priority,
+          name: currentUser?.profile?.fullName || '',
+          email: currentUser?.email || '',
+          department: currentUser?.profile?.department || '',
+          relatedTo: ticketForm.category
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       showAlert('Ticket submitted successfully!', 'success');
-      setTicketForm({ subject: '', category: '', description: '', priority: 'low' });
+      setTicketForm({ subject: '', category: '', description: '', priority: 'Low' });
       setShowCreateTicketForm(false);
       fetchTickets();
     } catch (error) {
@@ -2983,7 +2907,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       setTicketsLoading(true);
       setTicketsError(null);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/tickets`, {
+      const response = await axios.get(`${API_URL}/api/tickets/admin`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTickets(response.data);
@@ -2991,6 +2915,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     } catch (error) {
       setTicketsError('Failed to fetch tickets.');
       setTicketsLoading(false);
+      console.error('Error fetching tickets:', error.response?.data || error.message);
     }
   }, [API_URL]);
 
@@ -3134,11 +3059,11 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                 Reports
               </button>
               <button 
-                className={`sidebar-btn ${activeTab === 'createTicket' ? 'active' : ''}`}
-                onClick={() => handleNavigate('createTicket')}
+                className={`sidebar-btn ${activeTab === 'tickets' ? 'active' : ''}`}
+                onClick={() => handleNavigate('tickets')}
                 style={{["--btn-index"]: 7}}
               >
-                Create Ticket
+                Tickets
               </button>
               <button 
                 className={`sidebar-btn ${activeTab === 'users' ? 'active' : ''}`}
