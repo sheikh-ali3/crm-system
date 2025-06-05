@@ -231,12 +231,15 @@ const ComplaintsManagement = () => {
   };
 
   const handleManageTicketClick = useCallback((ticket) => {
+    console.log('Manage button clicked for ticket:', ticket);
     setTicketToManage(ticket);
     setManageFormData({
       status: ticket.status || '',
       message: '' // Start with an empty message for a new response
     });
+    console.log('Setting showManageModal to true');
     setShowManageModal(true);
+    console.log('showManageModal state after setting:', showManageModal); // Note: This will likely log the old state value
   }, []);
 
   const handleManagementFormChange = (e) => {
