@@ -119,7 +119,7 @@ router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res)
     console.log('GET /api/tickets called by user:', req.user);
     const tickets = await Ticket.find()
       .populate('adminId', 'email profile.fullName')
-      .populate('submittedBy', 'email profile.fullName')
+      .populate('submittedBy', 'email profile.fullName enterprise.companyName')
       .sort({ createdAt: -1 });
     console.log('Tickets found:', tickets.length);
     res.json(tickets);
@@ -144,6 +144,59 @@ router.get('/admin', authenticateToken, authorizeRole('admin'), async (req, res)
       stack: error.stack
     });
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Update a ticket by ID (Superadmin only)
+router.put('/:id', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, message } = req.body; // Expect status and an optional message for response
+
+    const ticket = await Ticket.findById(id);
+
+    if (!ticket) {
+      return res.status(404).json({ message: 'Ticket not found' });
+    }
+
+    // Update status if provided
+    if (status) {
+      ticket.status = status;
+    }
+
+    // Add response if message is provided
+    if (message && message.trim() !== '') {
+       ticket.responses.push({
+         message: message,
+         // Assuming responses schema includes user info, add req.user.id if needed
+         // respondedBy: req.user.id // Uncomment if your response schema has this field
+       });
+       // Optional: Create notification for admin/user who submitted the ticket
+       // try {
+       //   await notificationController.createNotification({
+       //     userId: ticket.submittedBy, // Or ticket.adminId depending on who to notify
+       //     message: `Your ticket (${ticket.subject}) has a new update.`, // Customize message
+       //     type: 'info',
+       //     title: 'Ticket Updated',
+       //     relatedTo: { model: 'Ticket', id: ticket._id }
+       //   });
+       // } catch (notifyErr) {
+       //   console.error('Failed to create notification for ticket update:', notifyErr);
+       // }
+    }
+
+    const updatedTicket = await ticket.save();
+
+    // Populate updated ticket to return full details
+    await updatedTicket.populate([
+      { path: 'adminId', select: 'email profile.fullName' },
+      { path: 'submittedBy', select: 'email profile.fullName enterprise.companyName' }
+    ]);
+
+    res.json(updatedTicket);
+  } catch (error) {
+    console.error('Error updating ticket:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 

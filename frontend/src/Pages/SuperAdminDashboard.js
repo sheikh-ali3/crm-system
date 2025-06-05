@@ -1161,7 +1161,11 @@ const SuperAdminDashboard = () => {
   };
 
   const handleSidebarNavigation = (itemId) => {
-    setActiveTab(itemId);
+    if (itemId === 'complaints') {
+      navigate('/superadmin/complaints');
+    } else {
+      setActiveTab(itemId);
+    }
   };
 
   const renderForm = (handleSubmit, title, submitButtonText) => {

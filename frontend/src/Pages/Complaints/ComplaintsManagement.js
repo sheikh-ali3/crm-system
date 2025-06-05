@@ -6,6 +6,7 @@ import SuperAdminSidebar from '../../Components/Layout/SuperAdminSidebar';
 import ThemeToggle from '../../Components/UI/ThemeToggle';
 import TicketList from './Components/TicketList';
 import TicketDetail from './Components/TicketDetail';
+import Modal from 'react-modal';
 
 const ComplaintsManagement = () => {
   const navigate = useNavigate();
@@ -29,6 +30,13 @@ const ComplaintsManagement = () => {
   const [responseForm, setResponseForm] = useState({
     message: ''
   });
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [ticketToManage, setTicketToManage] = useState(null);
+  const [manageFormData, setManageFormData] = useState({
+    status: '',
+    message: ''
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const showAlert = useCallback((message, type = 'success') => {
     setAlert({ show: true, message, type });
@@ -77,22 +85,32 @@ const ComplaintsManagement = () => {
     const token = localStorage.getItem('token');
     if (!token) {
       showAlert('Please login first', 'error');
-      navigate('/login');
+      navigate('/superadmin/login');
       return false;
     }
 
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/superadmin/verify`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await axios.get(`${apiUrl}/api/auth/user`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setCurrentUser(response.data.user);
-      return true;
+      if (response.data && response.data.role === 'superadmin') {
+        setCurrentUser(response.data);
+        console.log('SuperAdmin authenticated successfully.', response.data);
+        return true;
+      } else {
+        console.error('User is authenticated but not a superadmin.', response.data);
+        showAlert('You do not have permission to view this page.', 'error');
+        localStorage.removeItem('token');
+        navigate('/superadmin/login');
+        return false;
+      }
     } catch (error) {
-      console.error('Auth error:', error);
-      showAlert('Authentication failed', 'error');
+      console.error('Auth error:', error.response?.data || error.message);
+      showAlert('Authentication failed. Please login again.', 'error');
       localStorage.removeItem('token');
-      navigate('/login');
+      navigate('/superadmin/login');
       return false;
     }
   }, [navigate, showAlert]);
@@ -100,6 +118,7 @@ const ComplaintsManagement = () => {
   const fetchTickets = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching tickets with token:', token ? 'Present' : 'Missing');
       setLoading(true);
       
       const response = await axios.get(
@@ -135,8 +154,12 @@ const ComplaintsManagement = () => {
   useEffect(() => {
     const initPage = async () => {
       const isAuth = await checkAuth();
+      console.log('Auth check result:', isAuth);
       if (isAuth) {
+        console.log('User authenticated, fetching tickets...');
         fetchTickets();
+      } else {
+        console.log('User not authenticated, not fetching tickets.');
       }
     };
     
@@ -206,6 +229,69 @@ const ComplaintsManagement = () => {
       showAlert(error.response?.data?.message || 'Failed to add response', 'error');
     }
   };
+
+  const handleManageTicketClick = useCallback((ticket) => {
+    setTicketToManage(ticket);
+    setManageFormData({
+      status: ticket.status || '',
+      message: '' // Start with an empty message for a new response
+    });
+    setShowManageModal(true);
+  }, []);
+
+  const handleManagementFormChange = (e) => {
+    const { name, value } = e.target;
+    setManageFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitManagementForm = async (e) => {
+    e.preventDefault();
+    if (!ticketToManage) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await axios.put(
+        `${apiUrl}/api/tickets/${ticketToManage._id}`,
+        manageFormData, // Send status and message
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log('Ticket update response:', response.data);
+      showAlert('Ticket updated successfully!', 'success');
+      setShowManageModal(false);
+      setTicketToManage(null);
+      setManageFormData({ status: '', message: '' });
+      fetchTickets(); // Refresh the list
+    } catch (error) {
+      console.error('Error updating ticket:', error.response?.data || error.message);
+      showAlert(error.response?.data?.message || 'Failed to update ticket.', 'error');
+    }
+  };
+
+  const handleDeleteTicket = useCallback(async (ticketId) => {
+    if (window.confirm('Are you sure you want to delete this ticket?')) {
+      setIsDeleting(true);
+      try {
+        const token = localStorage.getItem('token');
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+        await axios.delete(`${apiUrl}/api/tickets/${ticketId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        showAlert('Ticket deleted successfully!', 'success');
+        fetchTickets(); // Refresh the ticket list
+      } catch (error) {
+        console.error('Error deleting ticket:', error.response?.data || error.message);
+        showAlert(error.response?.data?.message || 'Failed to delete ticket.', 'error');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  }, [fetchTickets, showAlert]);
 
   return (
     <div className="dashboard-layout">
@@ -360,79 +446,82 @@ const ComplaintsManagement = () => {
           )}
           
           {/* Tickets View */}
-          <div className="tickets-container">
-            {viewMode === 'list' && (
+          <div className="tickets-view">
+            {loading ? (
+              <div>Loading tickets...</div>
+            ) : error ? (
+              <div style={{ color: 'red' }}>{error}</div>
+            ) : tickets.length === 0 ? (
+              <div>No tickets found.</div>
+            ) : (
               <TicketList 
                 tickets={getFilteredTickets()} 
-                loading={loading} 
-                error={error} 
                 onSelectTicket={handleSelectTicket}
+                onManageTicket={handleManageTicketClick}
+                onDeleteTicket={handleDeleteTicket}
               />
-            )}
-            
-            {viewMode === 'detail' && selectedTicket && (
-              <div className="ticket-detail">
-                <div className="ticket-detail-header">
-                  <button className="back-btn" onClick={() => setViewMode('list')}>
-                    ← Back to List
-                  </button>
-                  <h3>Ticket Details</h3>
-                </div>
-                
-                <div className="ticket-info">
-                  <h4>{selectedTicket.subject}</h4>
-                  <p><strong>From:</strong> {selectedTicket.name} ({selectedTicket.email})</p>
-                  <p><strong>Department:</strong> {selectedTicket.department}</p>
-                  <p><strong>Category:</strong> {selectedTicket.category}</p>
-                  <p><strong>Priority:</strong> {selectedTicket.priority}</p>
-                  <p><strong>Status:</strong> {selectedTicket.status}</p>
-                  <p><strong>Created:</strong> {new Date(selectedTicket.createdAt).toLocaleString()}</p>
-                  <p><strong>Description:</strong> {selectedTicket.description}</p>
-                </div>
-
-                <div className="ticket-responses">
-                  <h4>Responses</h4>
-                  {selectedTicket.responses && selectedTicket.responses.map((response, index) => (
-                    <div key={index} className="response-item">
-                      <p>{response.message}</p>
-                      <small>{new Date(response.createdAt).toLocaleString()}</small>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="add-response">
-                  <h4>Add Response</h4>
-                  <textarea
-                    value={responseForm.message}
-                    onChange={(e) => setResponseForm({ message: e.target.value })}
-                    placeholder="Type your response here..."
-                    rows="4"
-                  ></textarea>
-                  <button 
-                    className="submit-btn"
-                    onClick={() => handleAddResponse(selectedTicket._id)}
-                    disabled={!responseForm.message.trim()}
-                  >
-                    Send Response
-                  </button>
-                </div>
-              </div>
             )}
           </div>
         </div>
-
-        {/* Debug/Error Section */}
-        <div style={{ background: '#f9f9f9', color: '#333', padding: '1rem', margin: '1rem 0', border: '1px solid #ccc', borderRadius: '6px' }}>
-          <h4>Debug: Raw Tickets Data</h4>
-          <pre style={{ maxHeight: 200, overflow: 'auto', fontSize: 12 }}>{JSON.stringify(tickets, null, 2)}</pre>
-          {error && (
-            <div style={{ color: 'red', marginTop: '1rem' }}>Error: {error}</div>
-          )}
-          {!error && !loading && tickets && tickets.length === 0 && (
-            <div style={{ color: '#888', marginTop: '1rem' }}>No tickets found. (API returned empty array)</div>
-          )}
-        </div>
       </div>
+
+      {/* Manage Ticket Modal */}
+      <Modal
+        isOpen={showManageModal}
+        onRequestClose={() => setShowManageModal(false)}
+        contentLabel="Manage Ticket"
+        className="Modal"
+        overlayClassName="Overlay"
+      >
+        {ticketToManage && (
+          <div className="modal-content">
+            <h3>Manage Ticket: {ticketToManage.subject}</h3>
+            <p><strong>Ticket No:</strong> {ticketToManage.ticketNo || 'TKT-000'}</p>
+            <p><strong>Status:</strong> {ticketToManage.status}</p>
+            <p><strong>Priority:</strong> {ticketToManage.priority}</p>
+            <p><strong>Created By:</strong> {ticketToManage.submittedBy?.profile?.fullName || 'N/A'}</p>
+            <p><strong>Enterprise:</strong> {ticketToManage.submittedBy?.enterprise?.companyName || 'N/A'}</p>
+            <hr/>
+            <form onSubmit={handleSubmitManagementForm}>
+              <div className="form-group">
+                <label htmlFor="status">Update Status:</label>
+                <select
+                  id="status"
+                  name="status"
+                  value={manageFormData.status}
+                  onChange={handleManagementFormChange}
+                  className="form-control"
+                >
+                  <option value="Open">Open</option>
+                  <option value="In Progress">Working</option>
+                  <option value="Resolved">Resolved</option>
+                  <option value="Closed">Closed</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="message">Add Response:</label>
+                <textarea
+                  id="message"
+                  name="message"
+                  value={manageFormData.message}
+                  onChange={handleManagementFormChange}
+                  placeholder="Type your response here..."
+                  rows="4"
+                  className="form-control"
+                ></textarea>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="btn btn-outline" onClick={() => setShowManageModal(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };
