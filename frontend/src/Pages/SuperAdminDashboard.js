@@ -317,10 +317,10 @@ const SuperAdminDashboard = () => {
       }
 
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      console.log('Fetching services from:', `${apiUrl}/api/services`);
+      console.log('Fetching services from:', `${apiUrl}/services`);
       
       const response = await axios.get(
-        `${apiUrl}/api/services`,
+        `${apiUrl}/services`,
         { 
           headers: { 
             Authorization: `Bearer ${token}`,

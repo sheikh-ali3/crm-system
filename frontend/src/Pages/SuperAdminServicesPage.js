@@ -184,7 +184,7 @@ const SuperAdminServicesPage = () => {
         return false;
       }
       
-      const response = await apiClient.get('/api/status');
+      const response = await apiClient.get('/status');
       console.log("Auth check response:", response);
       
       if (response && response.authenticated) {
@@ -233,7 +233,7 @@ const SuperAdminServicesPage = () => {
         return [];
       }
       // Use the correct backend endpoint
-      const response = await apiClient.get('/api/quotations', {
+      const response = await apiClient.get('/quotations', {
         headers: { Authorization: `Bearer ${token}` }
       });
       // Always use response.data if it exists, otherwise use response
