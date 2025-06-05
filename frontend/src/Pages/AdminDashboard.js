@@ -2294,11 +2294,15 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         return (
           <div className="section-container">
             <h1 className="section-title">Tickets</h1>
-            {!showCreateTicketForm && (
-              <button className="create-btn" onClick={() => setShowCreateTicketForm(true)}>
+            <div className="ticket-controls">
+              <button 
+                className="create-btn" 
+                onClick={() => setShowCreateTicketForm(true)}
+                style={{ display: showCreateTicketForm ? 'none' : 'block' }}
+              >
                 Create New Ticket
               </button>
-            )}
+            </div>
             {showCreateTicketForm && (
               <form className="ticket-form" onSubmit={e => e.preventDefault()} style={{ marginTop: 24 }}>
                 <div className="form-group">
@@ -2352,46 +2356,59 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                     <option value="Critical">Critical</option>
                   </select>
                 </div>
-                <button type="button" className="submit-btn" onClick={handleSubmitTicket}>
-                  Submit Ticket
-                </button>
-                <button type="button" className="cancel-btn" style={{ marginLeft: 12 }} onClick={() => setShowCreateTicketForm(false)}>
-                  Cancel
-                </button>
+                <div className="form-actions">
+                  <button type="button" className="submit-btn" onClick={handleSubmitTicket}>
+                    Submit Ticket
+                  </button>
+                  <button 
+                    type="button" 
+                    className="cancel-btn" 
+                    onClick={() => {
+                      setShowCreateTicketForm(false);
+                      setTicketForm({
+                        subject: '',
+                        category: '',
+                        description: '',
+                        priority: 'Low'
+                      });
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </form>
             )}
-            <div style={{ marginTop: 32 }}>
-              {ticketsLoading ? (
-                <div>Loading tickets...</div>
-              ) : ticketsError ? (
-                <div style={{ color: 'red' }}>{ticketsError}</div>
-              ) : tickets.length === 0 ? (
-                <div>No tickets found.</div>
-              ) : (
-                <table className="ticket-list-table">
-                  <thead>
-                    <tr>
-                      <th>Ticket No</th>
-                      <th>Subject</th>
-                      <th>Priority</th>
-                      <th>Status</th>
-                      <th>Created On</th>
+            
+            {ticketsLoading ? (
+              <div>Loading tickets...</div>
+            ) : ticketsError ? (
+              <div style={{ color: 'red' }}>{ticketsError}</div>
+            ) : tickets.length === 0 ? (
+              <div>No tickets found.</div>
+            ) : (
+              <table className="ticket-list-table">
+                <thead>
+                  <tr>
+                    <th>Ticket No</th>
+                    <th>Subject</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Created On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tickets.map(ticket => (
+                    <tr key={ticket._id}>
+                      <td>{ticket.ticketNo || 'TKT-000'}</td>
+                      <td>{ticket.subject}</td>
+                      <td>{ticket.priority}</td>
+                      <td>{ticket.status}</td>
+                      <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {tickets.map(ticket => (
-                      <tr key={ticket._id}>
-                        <td>{ticket.ticketNo || 'TKT-000'}</td>
-                        <td>{ticket.subject}</td>
-                        <td>{ticket.priority}</td>
-                        <td>{ticket.status}</td>
-                        <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         );
       default:

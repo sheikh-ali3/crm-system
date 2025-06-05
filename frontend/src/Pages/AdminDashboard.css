@@ -922,6 +922,136 @@
   border-radius: 8px;
   padding: 25px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 24px;
+}
+
+.ticket-form .form-group {
+  margin-bottom: 20px;
+}
+
+.ticket-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.ticket-form input,
+.ticket-form select,
+.ticket-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.ticket-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.ticket-form input:focus,
+.ticket-form select:focus,
+.ticket-form textarea:focus {
+  outline: none;
+  border-color: #1a3e72;
+  box-shadow: 0 0 0 3px rgba(26, 62, 114, 0.1);
+}
+
+.ticket-form .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.ticket-form .submit-btn,
+.ticket-form .cancel-btn {
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ticket-form .submit-btn {
+  background-color: #1a3e72;
+  color: white;
+  border: none;
+}
+
+.ticket-form .submit-btn:hover {
+  background-color: #15305c;
+}
+
+.ticket-form .cancel-btn {
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.ticket-form .cancel-btn:hover {
+  background-color: #e8e8e8;
+}
+
+.ticket-controls {
+  margin-bottom: 24px;
+}
+
+.create-btn {
+  padding: 10px 20px;
+  background-color: #1a3e72;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.create-btn:hover {
+  background-color: #15305c;
+}
+
+.create-btn::before {
+  content: "+";
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Ticket List Table */
+.ticket-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.ticket-list-table th,
+.ticket-list-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.ticket-list-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.ticket-list-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ticket-list-table tr:hover {
+  background-color: #f8f9fa;
 }
 
 /* Responsive adjustments */
