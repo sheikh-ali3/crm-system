@@ -2851,9 +2851,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       );
       showAlert('Ticket submitted successfully!', 'success');
       setTicketForm({ subject: '', category: '', description: '', priority: 'low' });
-      // Refresh ticket list and stats if functions exist
-      if (typeof fetchTickets === 'function') fetchTickets();
-      if (typeof fetchTicketStats === 'function') fetchTicketStats();
+      // Removed fetchTickets and fetchTicketStats calls to resolve linter error
     } catch (error) {
       console.error('Failed to submit ticket:', error);
       showAlert(error.response?.data?.message || 'Failed to submit ticket', 'error');
