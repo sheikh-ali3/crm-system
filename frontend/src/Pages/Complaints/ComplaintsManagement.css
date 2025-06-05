@@ -60,6 +60,89 @@
   transform: translateY(-2px);
 }
 
+/* Ticket Form */
+.ticket-form {
+  background-color: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+}
+
+.ticket-form .form-group {
+  margin-bottom: 20px;
+}
+
+.ticket-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.ticket-form input,
+.ticket-form select,
+.ticket-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  transition: all var(--transition-speed) ease;
+}
+
+.ticket-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.ticket-form input:focus,
+.ticket-form select:focus,
+.ticket-form textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.ticket-form .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.ticket-form .submit-btn,
+.ticket-form .cancel-btn {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-speed) ease;
+  font-size: 0.9rem;
+}
+
+.ticket-form .submit-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.ticket-form .submit-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+.ticket-form .cancel-btn {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.ticket-form .cancel-btn:hover {
+  background-color: var(--border-light);
+}
+
 /* Ticket Container */
 .tickets-container {
   background-color: var(--card-bg);
@@ -110,5 +193,14 @@
   .create-ticket-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .ticket-form .form-actions {
+    flex-direction: column;
+  }
+
+  .ticket-form .submit-btn,
+  .ticket-form .cancel-btn {
+    width: 100%;
   }
 } 

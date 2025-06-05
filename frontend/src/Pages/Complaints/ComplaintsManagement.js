@@ -19,6 +19,13 @@ const ComplaintsManagement = () => {
   const [admins, setAdmins] = useState([]);
   const [filteredStatus, setFilteredStatus] = useState('');
   const [filteredPriority, setFilteredPriority] = useState('');
+  const [showCreateTicketForm, setShowCreateTicketForm] = useState(false);
+  const [ticketForm, setTicketForm] = useState({
+    subject: '',
+    category: '',
+    description: '',
+    priority: 'Low'
+  });
 
   const showAlert = useCallback((message, type = 'success') => {
     setAlert({ show: true, message, type });
@@ -26,6 +33,42 @@ const ComplaintsManagement = () => {
       setAlert({ show: false, message: '', type: 'success' });
     }, 3000);
   }, []);
+
+  const handleTicketFormChange = (e) => {
+    const { name, value } = e.target;
+    setTicketForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmitTicket = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/tickets`,
+        {
+          subject: ticketForm.subject,
+          category: ticketForm.category,
+          description: ticketForm.description,
+          priority: ticketForm.priority,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      showAlert('Ticket submitted successfully!', 'success');
+      setTicketForm({
+        subject: '',
+        category: '',
+        description: '',
+        priority: 'Low'
+      });
+      setShowCreateTicketForm(false);
+      fetchTickets();
+    } catch (error) {
+      console.error('Failed to submit ticket:', error);
+      showAlert(error.response?.data?.message || 'Failed to submit ticket', 'error');
+    }
+  };
 
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -194,7 +237,90 @@ const ComplaintsManagement = () => {
                 <option value="Low">Low</option>
               </select>
             </div>
+            <button 
+              className="create-ticket-btn" 
+              onClick={() => setShowCreateTicketForm(true)}
+              style={{ display: showCreateTicketForm ? 'none' : 'flex' }}
+            >
+              Create New Ticket
+            </button>
           </div>
+          
+          {showCreateTicketForm && (
+            <form className="ticket-form" onSubmit={e => e.preventDefault()}>
+              <div className="form-group">
+                <label>Title</label>
+                <input
+                  type="text"
+                  name="subject"
+                  value={ticketForm.subject}
+                  onChange={handleTicketFormChange}
+                  placeholder="Ticket title"
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Category</label>
+                <select
+                  name="category"
+                  value={ticketForm.category}
+                  onChange={handleTicketFormChange}
+                  required
+                >
+                  <option value="">Select category</option>
+                  <option value="Technical">Technical Issue</option>
+                  <option value="Billing">Billing Issue</option>
+                  <option value="Product">Product</option>
+                  <option value="Service">Service</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  name="description"
+                  value={ticketForm.description}
+                  onChange={handleTicketFormChange}
+                  placeholder="Describe your issue in detail"
+                  required
+                ></textarea>
+              </div>
+              <div className="form-group">
+                <label>Priority</label>
+                <select
+                  name="priority"
+                  value={ticketForm.priority}
+                  onChange={handleTicketFormChange}
+                  required
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
+                </select>
+              </div>
+              <div className="form-actions">
+                <button type="button" className="submit-btn" onClick={handleSubmitTicket}>
+                  Submit Ticket
+                </button>
+                <button 
+                  type="button" 
+                  className="cancel-btn" 
+                  onClick={() => {
+                    setShowCreateTicketForm(false);
+                    setTicketForm({
+                      subject: '',
+                      category: '',
+                      description: '',
+                      priority: 'Low'
+                    });
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
           
           {/* Tickets View */}
           <div className="tickets-container">
