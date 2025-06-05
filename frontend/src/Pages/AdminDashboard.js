@@ -130,6 +130,13 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     description: '',
     budget: 0
   });
+  // Add state for ticket form fields
+  const [ticketForm, setTicketForm] = useState({
+    subject: '',
+    category: '',
+    description: '',
+    priority: 'low',
+  });
 
   // Initialize checking authentication
   useEffect(() => {
@@ -267,9 +274,25 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       });
       
       if (response.data) {
-        setEnterpriseInfo(response.data);
-        console.log('Enterprise info updated:', response.data);
-        return response.data;
+        // Map the backend field names to frontend field names
+        const mappedData = {
+          name: response.data.name || '',
+          industry: response.data.industry || '',
+          business: response.data.business || '',
+          website: response.data.website || '',
+          logo: response.data.logo || '',
+          address: response.data.address || '',
+          mailingAddress: response.data.mailingAddress || '',
+          city: response.data.city || '',
+          country: response.data.country || '',
+          zipCode: response.data.zipCode || '',
+          phone: response.data.phone || '',
+          email: response.data.email || ''
+        };
+        
+        setEnterpriseInfo(mappedData);
+        console.log('Enterprise info updated:', mappedData);
+        return mappedData;
       } else {
         console.warn('No enterprise data received from API');
         showAlert('Failed to load company information', 'warning');
@@ -1510,10 +1533,15 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                   <div className="company-info-display">
                     <div className="company-logo">
                       {enterpriseInfo.logo ? (
-                        <img src={enterpriseInfo.logo} alt={`${enterpriseInfo.name} logo`} />
+                        (() => {
+                          const logoUrl = enterpriseInfo.logo.startsWith('http')
+                            ? enterpriseInfo.logo
+                            : `${API_URL}${enterpriseInfo.logo}`;
+                          return <img src={logoUrl} alt={`${enterpriseInfo.name} logo`} />;
+                        })()
                       ) : (
                         <div className="logo-placeholder">
-                          {enterpriseInfo.name.charAt(0)}
+                          {enterpriseInfo.name?.charAt(0) || 'C'}
                         </div>
                       )}
                     </div>
@@ -2189,39 +2217,62 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         return (
           <div className="section-container">
             <h1 className="section-title">Create Support Ticket</h1>
-            <form className="ticket-form">
+            <form className="ticket-form" onSubmit={e => e.preventDefault()}>
               <div className="form-group">
                 <label>Title</label>
-                <input type="text" placeholder="Ticket title" />
-                        </div>
+                <input
+                  type="text"
+                  name="subject"
+                  value={ticketForm.subject}
+                  onChange={handleTicketFormChange}
+                  placeholder="Ticket title"
+                  required
+                />
+              </div>
               <div className="form-group">
                 <label>Category</label>
-                <select>
+                <select
+                  name="category"
+                  value={ticketForm.category}
+                  onChange={handleTicketFormChange}
+                  required
+                >
                   <option value="">Select category</option>
-                  <option value="technical">Technical Issue</option>
-                  <option value="billing">Billing Issue</option>
-                  <option value="feature">Feature Request</option>
-                  <option value="other">Other</option>
+                  <option value="Technical">Technical Issue</option>
+                  <option value="Billing">Billing Issue</option>
+                  <option value="Feature">Feature Request</option>
+                  <option value="Other">Other</option>
                 </select>
-                    </div>
+              </div>
               <div className="form-group">
                 <label>Description</label>
-                <textarea placeholder="Describe your issue in detail"></textarea>
-                  </div>
+                <textarea
+                  name="description"
+                  value={ticketForm.description}
+                  onChange={handleTicketFormChange}
+                  placeholder="Describe your issue in detail"
+                  required
+                ></textarea>
+              </div>
               <div className="form-group">
                 <label>Priority</label>
-                <select>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="urgent">Urgent</option>
+                <select
+                  name="priority"
+                  value={ticketForm.priority}
+                  onChange={handleTicketFormChange}
+                  required
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Critical">Critical</option>
                 </select>
-                </div>
-              <button type="button" className="submit-btn" onClick={() => console.log('Submit ticket clicked')}>
+              </div>
+              <button type="button" className="submit-btn" onClick={handleSubmitTicket}>
                 Submit Ticket
               </button>
             </form>
-              </div>
+          </div>
         );
       case 'users':
         return (
@@ -2403,6 +2454,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       // Append logo file ONLY if a new one was selected
       if (logoFile) {
         formData.append('logo', logoFile);
+      } else if (enterpriseInfo.logo) {
+        formData.append('existingLogo', enterpriseInfo.logo);
       }
 
       // Submit to API
@@ -2825,6 +2878,37 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       websocketService.disconnect();
     };
   }, []);
+
+  // Handler for ticket form field changes
+  const handleTicketFormChange = (e) => {
+    const { name, value } = e.target;
+    setTicketForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handler for submitting the ticket
+  const handleSubmitTicket = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/tickets`,
+        {
+          subject: ticketForm.subject,
+          category: ticketForm.category,
+          description: ticketForm.description,
+          priority: ticketForm.priority,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      showAlert('Ticket submitted successfully!', 'success');
+      setTicketForm({ subject: '', category: '', description: '', priority: 'low' });
+      // Refresh ticket list and stats if functions exist
+      if (typeof fetchTickets === 'function') fetchTickets();
+      if (typeof fetchTicketStats === 'function') fetchTicketStats();
+    } catch (error) {
+      console.error('Failed to submit ticket:', error);
+      showAlert(error.response?.data?.message || 'Failed to submit ticket', 'error');
+    }
+  };
 
   return (
     <div className="admin-dashboard">

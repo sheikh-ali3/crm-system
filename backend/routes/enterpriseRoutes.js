@@ -122,8 +122,8 @@ router.put('/update-company', authenticateToken, upload.single('logo'), async (r
     });
   } catch (error) {
     console.error('Error updating company info:', error);
-    // Include the specific error message in the response for debugging
-    res.status(500).json({ message: 'Server error', error: error.message });
+    // Include the specific error message and stack in the response for debugging
+    res.status(500).json({ message: 'Server error', error: error.message, stack: error.stack });
   }
 });
 
