@@ -7,7 +7,11 @@ import ThemeToggle from '../Components/UI/ThemeToggle';
 import AdminSidebar from '../Components/Layout/AdminSidebar';
 import DashboardCard from '../Components/Dashboard/DashboardCard';
 import CustomAlert from '../Components/Common/CustomAlert';
+<<<<<<< HEAD
 import TicketForm from '../Components/TicketForm';
+=======
+import websocketService from '../services/websocketService';
+>>>>>>> 7942b572bb21dc66e6cb47a1b57516c4fc3462b9
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -265,11 +269,22 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       const response = await axios.get(`${API_URL}/api/enterprise/info`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setEnterpriseInfo(response.data);
+      
+      if (response.data) {
+        setEnterpriseInfo(response.data);
+        console.log('Enterprise info updated:', response.data);
+        return response.data;
+      } else {
+        console.warn('No enterprise data received from API');
+        showAlert('Failed to load company information', 'warning');
+        return null;
+      }
     } catch (error) {
       console.error('Failed to fetch enterprise info:', error);
+      showAlert(error.response?.data?.message || 'Failed to load company information', 'error');
+      return null;
     }
-  }, []);
+  }, [showAlert]);
 
   // Sample services data
   const getSampleServices = useCallback(() => {
@@ -361,26 +376,18 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
   const fetchServices = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching services data...');
-      
       const token = localStorage.getItem('token');
       if (!token) {
-        console.log('No token found');
-        showAlert('No authentication token found. Please login again.', 'error');
-        navigate('/admin/login');
+        showAlert('Authentication token not found', 'error');
+        setServices([]);
         return;
       }
-      
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      
-      const response = await axios.get(`${apiUrl}/api/services`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 15000
+      const response = await axios.get(`${API_URL}/services/admin`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
-      
       console.log('Services data received:', response.data);
       if (Array.isArray(response.data) && response.data.length > 0) {
-      setServices(response.data);
+        setServices(response.data);
       } else {
         setServices([]);
       }
@@ -631,60 +638,22 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
   const fetchInvoices = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      // This endpoint should return invoices specific to the current enterprise
-      const response = await axios.get(`${API_URL}/api/enterprise/invoices`, {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await axios.get(`${apiUrl}/api/invoices/admin`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setInvoices(response.data);
     } catch (error) {
       console.error('Failed to fetch invoices:', error);
-      // If API is not yet implemented, use sample data for development
-      const sampleInvoices = [
-        {
-          _id: '1',
-          invoiceNumber: 'INV-2023-001',
-          productId: 'PROD-CRM-001',
-          productName: 'CRM Professional',
-          amount: 499.99,
-          status: 'paid',
-          issueDate: '2023-01-15',
-          dueDate: '2023-02-15',
-          paidDate: '2023-01-20',
-          billingPeriod: 'Jan 2023 - Jan 2024'
-        },
-        {
-          _id: '2',
-          invoiceNumber: 'INV-2023-002',
-          productId: 'PROD-HRMS-001',
-          productName: 'HRMS Basic',
-          amount: 399.99,
-          status: 'due',
-          issueDate: '2023-02-01',
-          dueDate: '2023-03-01',
-          paidDate: null,
-          billingPeriod: 'Feb 2023 - Feb 2024'
-        },
-        {
-          _id: '3',
-          invoiceNumber: 'INV-2023-003',
-          productId: 'PROD-JP-001',
-          productName: 'Job Portal',
-          amount: 299.99,
-          status: 'overdue',
-          issueDate: '2023-01-01',
-          dueDate: '2023-02-01',
-          paidDate: null,
-          billingPeriod: 'Jan 2023 - Jan 2024'
-        }
-      ];
-      setInvoices(sampleInvoices);
+      showAlert('Failed to fetch invoices', 'error');
+      setInvoices([]);
     }
   }, []);
 
   const fetchReports = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/reports/summary`, {
+      const response = await axios.get(`${API_URL}/tickets/stats/summary`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setReports(response.data);
@@ -696,7 +665,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
   const fetchTicketStats = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/tickets/summary`, {
+      const response = await axios.get(`${API_URL}/tickets/stats/summary`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTicketStats(response.data);
@@ -1975,8 +1944,9 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                           <label>Enterprise Name *</label>
                           <input
                             type="text"
-                            value={quotationForm.enterpriseName}
-                            onChange={e => setQuotationForm({ ...quotationForm, enterpriseName: e.target.value })}
+                            value={currentUser?.enterprise?.companyName || currentUser?.profile?.companyName || ''}
+                            readOnly
+                            className="read-only"
                             required
                           />
                         </div>
@@ -1993,8 +1963,9 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                           <label>Email *</label>
                           <input
                             type="email"
-                            value={quotationForm.email}
-                            onChange={e => setQuotationForm({ ...quotationForm, email: e.target.value })}
+                            value={currentUser?.email || ''}
+                            readOnly
+                            className="read-only"
                             required
                           />
                         </div>
@@ -2057,27 +2028,31 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                     <h3>Invoice Information</h3>
                     <div className="invoice-detail-grid">
                       <div className="detail-item">
-                        <span className="detail-label">Product:</span>
-                        <span className="detail-value">{selectedInvoice.productName}</span>
-                        </div>
+                        <span className="detail-label">Product/Service:</span>
+                        <span className="detail-value">{
+                          selectedInvoice.items && selectedInvoice.items.length > 0
+                            ? selectedInvoice.items.map(item => item.name).join(', ')
+                            : selectedInvoice.productName || (selectedInvoice.enterpriseDetails && selectedInvoice.enterpriseDetails.companyName) || 'N/A'
+                        }</span>
+                      </div>
                       <div className="detail-item">
                         <span className="detail-label">Amount:</span>
-                        <span className="detail-value">${selectedInvoice.amount.toFixed(2)}</span>
-                    </div>
+                        <span className="detail-value">${(selectedInvoice.totalAmount || 0).toFixed(2)}</span>
+                      </div>
                       <div className="detail-item">
                         <span className="detail-label">Status:</span>
                         <span className={`detail-value status-badge ${getStatusColor(selectedInvoice.status)}`}>
                           {selectedInvoice.status}
                         </span>
-                  </div>
+                      </div>
                       <div className="detail-item">
                         <span className="detail-label">Issue Date:</span>
                         <span className="detail-value">{formatDate(selectedInvoice.issueDate)}</span>
-                </div>
+                      </div>
                       <div className="detail-item">
                         <span className="detail-label">Due Date:</span>
                         <span className="detail-value">{formatDate(selectedInvoice.dueDate)}</span>
-              </div>
+                      </div>
                       <div className="detail-item">
                         <span className="detail-label">Paid Date:</span>
                         <span className="detail-value">{formatDate(selectedInvoice.paidDate)}</span>
@@ -2126,7 +2101,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                   <thead>
                     <tr>
                       <th>Invoice #</th>
-                      <th>Product</th>
+                      <th>Product/Service</th>
                       <th>Amount</th>
                       <th>Issue Date</th>
                       <th>Due Date</th>
@@ -2139,11 +2114,22 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                     {invoices && invoices.length > 0 ? (
                       invoices.map(invoice => {
                         const status = getInvoiceStatus(invoice);
+                        // Get a display name for the invoice (service/quotation/product)
+                        let displayName = '';
+                        if (invoice.items && invoice.items.length > 0) {
+                          displayName = invoice.items.map(item => item.name).join(', ');
+                        } else if (invoice.productName) {
+                          displayName = invoice.productName;
+                        } else if (invoice.enterpriseDetails && invoice.enterpriseDetails.companyName) {
+                          displayName = invoice.enterpriseDetails.companyName;
+                        } else {
+                          displayName = 'N/A';
+                        }
                         return (
                           <tr key={invoice._id} className={`invoice-row ${getStatusColor(status)}`}>
                             <td>{invoice.invoiceNumber}</td>
-                            <td>{invoice.productName}</td>
-                            <td>${invoice.amount.toFixed(2)}</td>
+                            <td>{displayName}</td>
+                            <td>${(invoice.totalAmount || 0).toFixed(2)}</td>
                             <td>{formatDate(invoice.issueDate)}</td>
                             <td>{formatDate(invoice.dueDate)}</td>
                             <td>{formatDate(invoice.paidDate)}</td>
@@ -2390,14 +2376,11 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       formData.append('business', enterpriseInfo.business);
       formData.append('website', enterpriseInfo.website);
       
-      // Append logo file if a new one was selected
+      // Append logo file ONLY if a new one was selected
       if (logoFile) {
         formData.append('logo', logoFile);
-      } else if (enterpriseInfo.logo) {
-        // Keep existing logo if no new file was uploaded
-        formData.append('existingLogo', enterpriseInfo.logo);
       }
-      
+
       // Submit to API
       const response = await axios.put(
         `${API_URL}/api/enterprise/update-company`,
@@ -2410,10 +2393,18 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         }
       );
       
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      
       // Update state with response data
       setEnterpriseInfo(prevState => ({
         ...prevState,
-        ...response.data
+        name: response.data.name || prevState.name,
+        industry: response.data.industry || prevState.industry,
+        business: response.data.business || prevState.business,
+        website: response.data.website || prevState.website,
+        logo: response.data.logo || prevState.logo
       }));
       
       // Clear logo file state
@@ -2427,6 +2418,13 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       }));
       
       showAlert('Company information updated successfully!', 'success');
+      
+      // Re-fetch enterprise info to ensure persistence
+      const updatedInfo = await fetchEnterpriseInfo();
+      if (updatedInfo) {
+        setEnterpriseInfo(updatedInfo);
+      }
+
     } catch (error) {
       console.error('Failed to update company info:', error);
       showAlert(error.response?.data?.message || 'Failed to update company information', 'error');
@@ -2564,9 +2562,10 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     try {
       setPaymentProcessing(true);
       const token = localStorage.getItem('token');
-      await axios.post(
-        `${API_URL}/api/enterprise/invoices/${invoiceId}/pay`,
-        {},
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      await axios.patch(
+        `${apiUrl}/api/invoices/${invoiceId}/status`,
+        { status: 'paid' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       showAlert('Payment processed successfully', 'success');
@@ -2756,6 +2755,52 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       }
     }
   };
+
+  // Add WebSocket event handlers
+  useEffect(() => {
+    // Connect to WebSocket when component mounts
+    websocketService.connect();
+
+    // Subscribe to invoice events
+    const handleInvoiceCreated = (invoice) => {
+      setInvoices(prevInvoices => [...prevInvoices, invoice]);
+      showAlert('New invoice received', 'success');
+    };
+
+    const handleInvoiceUpdated = (invoice) => {
+      setInvoices(prevInvoices => 
+        prevInvoices.map(inv => inv._id === invoice._id ? invoice : inv)
+      );
+      showAlert('Invoice updated', 'success');
+    };
+
+    const handleInvoiceDeleted = ({ id }) => {
+      setInvoices(prevInvoices => prevInvoices.filter(inv => inv._id !== id));
+      showAlert('Invoice deleted', 'success');
+    };
+
+    const handleInvoiceStatusUpdated = (invoice) => {
+      setInvoices(prevInvoices => 
+        prevInvoices.map(inv => inv._id === invoice._id ? invoice : inv)
+      );
+      showAlert('Invoice status updated', 'success');
+    };
+
+    // Subscribe to events
+    websocketService.subscribe('invoice_created', handleInvoiceCreated);
+    websocketService.subscribe('invoice_updated', handleInvoiceUpdated);
+    websocketService.subscribe('invoice_deleted', handleInvoiceDeleted);
+    websocketService.subscribe('invoice_status_updated', handleInvoiceStatusUpdated);
+
+    // Cleanup on unmount
+    return () => {
+      websocketService.unsubscribe('invoice_created', handleInvoiceCreated);
+      websocketService.unsubscribe('invoice_updated', handleInvoiceUpdated);
+      websocketService.unsubscribe('invoice_deleted', handleInvoiceDeleted);
+      websocketService.unsubscribe('invoice_status_updated', handleInvoiceStatusUpdated);
+      websocketService.disconnect();
+    };
+  }, []);
 
   return (
     <div className="admin-dashboard">

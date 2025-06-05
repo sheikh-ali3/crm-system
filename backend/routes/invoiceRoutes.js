@@ -6,6 +6,7 @@ const Service = require('../models/serviceModel');
 const Quotation = require('../models/quotationModel');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { isAdmin, isSuperAdmin } = require('../middleware/roleMiddleware');
+const websocketService = require('../services/websocketService');
 
 // Get all invoices - SuperAdmin only
 router.get('/', authenticateToken, isSuperAdmin, async (req, res) => {
@@ -162,6 +163,10 @@ router.post('/', authenticateToken, isSuperAdmin, async (req, res) => {
     });
 
     const savedInvoice = await newInvoice.save();
+
+    // Notify the enterprise admin about the new invoice
+    websocketService.notifyUser(adminId, 'invoice_created', savedInvoice);
+
     res.status(201).json(savedInvoice);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -246,6 +251,9 @@ router.put('/:id', authenticateToken, isSuperAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Invoice not found' });
     }
 
+    // Notify the enterprise admin about the invoice update
+    websocketService.notifyUser(adminId, 'invoice_updated', updatedInvoice);
+
     res.json(updatedInvoice);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -255,14 +263,56 @@ router.put('/:id', authenticateToken, isSuperAdmin, async (req, res) => {
 // Delete an invoice - SuperAdmin only
 router.delete('/:id', authenticateToken, isSuperAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-    const deletedInvoice = await Invoice.findByIdAndDelete(id);
+    const invoice = await Invoice.findById(req.params.id);
     
-    if (!deletedInvoice) {
+    if (!invoice) {
       return res.status(404).json({ message: 'Invoice not found' });
     }
-    
+
+    await Invoice.findByIdAndDelete(req.params.id);
+
+    // Notify the enterprise admin about the invoice deletion
+    websocketService.notifyUser(invoice.adminId, 'invoice_deleted', { id: req.params.id });
+
     res.json({ message: 'Invoice deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update invoice status - Admin only
+router.patch('/:id/status', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const invoice = await Invoice.findById(req.params.id);
+
+    if (!invoice) {
+      return res.status(404).json({ message: 'Invoice not found' });
+    }
+
+    // Check if user is authorized to update this invoice
+    if (invoice.adminId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to update this invoice' });
+    }
+
+    // Only allow status updates to 'paid' or 'cancelled'
+    if (!['paid', 'cancelled'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status update' });
+    }
+
+    const updatedInvoice = await Invoice.findByIdAndUpdate(
+      req.params.id,
+      {
+        status,
+        ...(status === 'paid' && { paidDate: new Date() })
+      },
+      { new: true }
+    );
+
+    // Notify super admins about the status update
+    websocketService.notifySuperAdmins('invoice_status_updated', updatedInvoice);
+
+    res.json(updatedInvoice);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
