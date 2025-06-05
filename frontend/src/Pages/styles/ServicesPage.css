@@ -100,6 +100,9 @@
   background-color: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-y: visible !important;
+  height: auto !important;
+  max-height: none !important;
 }
 
 table {
@@ -887,4 +890,36 @@ textarea:focus {
   .info-value {
     margin-top: 5px;
   }
+}
+
+/* Styles for the services and quotations sections to take full width */
+.services-section,
+.quotations-section {
+  width: 100%;
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+  /* Ensure these sections don't force internal scrolling */
+  overflow: visible !important; /* Apply to both x and y */
+  height: auto !important;
+  max-height: none !important;
+}
+
+.services-section .services-header,
+.quotations-section .quotations-header {
+  padding: var(--section-spacing);
+  padding-bottom: 20px;
+}
+
+.services-section .stats-cards {
+   padding: 0 var(--section-spacing);
+}
+
+.services-section .services-list,
+.quotations-section .quotations-list {
+  padding: 0 var(--section-spacing) var(--section-spacing) var(--section-spacing);
+  /* Ensure the list container does not cause vertical scrolling */
+  overflow: visible !important; /* Apply to both x and y */
+  height: auto !important;
+  max-height: none !important;
 } 

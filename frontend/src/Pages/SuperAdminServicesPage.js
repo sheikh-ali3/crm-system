@@ -734,33 +734,41 @@ const SuperAdminServicesPage = () => {
                     <p>No services found. Add your first service to get started.</p>
                   </div>
                 ) : (
-                  <div className="services-table">
+                  <div className="services-table" style={{ overflowY: 'visible'}}>
                     <table>
                       <thead>
                         <tr>
-                          <th>Service</th>
+                          <th>Icon</th>
+                          <th>Service Name</th>
+                          <th>Description</th>
                           <th>Category</th>
                           <th>Price</th>
                           <th>Status</th>
+                          <th>Duration</th>
+                          <th>Features</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {services.map((service) => (
                           <tr key={service._id}>
-                            <td className="service-name-cell">
-                              <span className="service-icon">{service.icon}</span>
-                              <div>
-                                <div className="service-name">{service.name}</div>
-                                <div className="service-description">{service.description.substring(0, 50)}...</div>
-                              </div>
-                            </td>
+                            <td className="service-icon">{service.icon}</td>
+                            <td>{service.name}</td>
+                            <td>{service.description}</td>
                             <td>{service.category}</td>
                             <td>${service.price.toLocaleString()}</td>
                             <td>
-                              <span className={`status-badge ${service.active ? 'active' : 'inactive'}`}>
-                                {service.active ? 'Active' : 'Inactive'}
-                              </span>
+                              <span className={`status-badge ${service.active ? 'active' : 'inactive'}`}>{service.active ? 'Active' : 'Inactive'}</span>
+                            </td>
+                            <td>{service.duration ? `${service.duration.value || ''} ${service.duration.unit || ''}` : ''}</td>
+                            <td>
+                              {service.features && service.features.length > 0 ? (
+                                <ul style={{margin: 0, padding: 0, listStyle: 'none'}}>
+                                  {service.features.map((feature, idx) => (
+                                    <li key={idx}>{feature.included ? '✓' : '✕'} {feature.name}</li>
+                                  ))}
+                                </ul>
+                              ) : '—'}
                             </td>
                             <td>
                               <div className="action-buttons">

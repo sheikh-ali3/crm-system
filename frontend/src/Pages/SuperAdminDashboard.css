@@ -14,6 +14,9 @@
   position: relative;
   overflow-x: hidden;
   transition: margin-left var(--transition-speed) ease;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
 }
 
 /* Dashboard header */
@@ -76,6 +79,9 @@
   max-width: 1200px;
   margin: 0 auto;
   animation: fadeIn 0.5s ease;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
 }
 
 @keyframes fadeIn {
