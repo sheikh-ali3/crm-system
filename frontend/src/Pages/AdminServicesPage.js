@@ -251,55 +251,6 @@ const AdminServicesPage = () => {
     ];
   }, []);
 
-  // Helper function to provide sample quotations data
-  const getSampleQuotations = useCallback(() => {
-    return [
-      {
-        id: 1,
-        serviceId: { name: 'Web Development', price: 2500 },
-        requestDetails: 'Need a responsive e-commerce website with product catalog and payment integration',
-        status: 'pending',
-        createdAt: new Date('2023-06-15'),
-        requestedPrice: 2000
-      },
-      {
-        id: 2,
-        serviceId: { name: 'Mobile App Development', price: 3500 },
-        requestDetails: 'Looking for an iOS app for my food delivery business',
-        status: 'approved',
-        createdAt: new Date('2023-06-10'),
-        finalPrice: 3200,
-        approvedDate: new Date('2023-06-12')
-      },
-      {
-        id: 3,
-        serviceId: { name: 'UI/UX Design', price: 1800 },
-        requestDetails: 'Need a complete redesign of our SaaS dashboard',
-        status: 'pending',
-        createdAt: new Date('2023-06-05'),
-        requestedPrice: 1500
-      },
-      {
-        id: 4,
-        serviceId: { name: 'SEO Services', price: 1200 },
-        requestDetails: 'Looking for monthly SEO optimization for our e-commerce store',
-        status: 'rejected',
-        createdAt: new Date('2023-05-28'),
-        rejectionReason: 'Service fully booked for the requested timeframe'
-      },
-      {
-        id: 5,
-        serviceId: { name: 'Cloud Consulting', price: 2800 },
-        requestDetails: 'Need help migrating our on-prem infrastructure to AWS',
-        status: 'completed',
-        createdAt: new Date('2023-05-15'),
-        finalPrice: 3000,
-        approvedDate: new Date('2023-05-18'),
-        completedDate: new Date('2023-06-01')
-      }
-    ];
-  }, []);
-
   // Fetch services
   const fetchServices = useCallback(async () => {
     console.log('Attempting to fetch services');
@@ -494,17 +445,8 @@ const AdminServicesPage = () => {
       } else if (error.request) {
         console.error('No response received:', error.request);
       }
-      
-      // Use sample data as fallback
-      console.log('Using sample quotations data');
-      const sampleQuotations = [
-        { id: 1, serviceId: { name: 'Web Development', price: 2500 }, client: 'Acme Corp', amount: 5000, status: 'pending', createdAt: new Date('2023-06-15') },
-        { id: 2, serviceId: { name: 'Mobile App Development', price: 3500 }, client: 'Beta Industries', amount: 7500, status: 'approved', createdAt: new Date('2023-06-10') },
-        { id: 3, serviceId: { name: 'UI/UX Design', price: 1800 }, client: 'Global Tech', amount: 12000, status: 'pending', createdAt: new Date('2023-06-05') },
-        { id: 4, serviceId: { name: 'SEO Services', price: 1200 }, client: 'Delta Services', amount: 8500, status: 'rejected', createdAt: new Date('2023-05-28') },
-        { id: 5, serviceId: { name: 'Cloud Consulting', price: 2800 }, client: 'Acme Corp', amount: 4500, status: 'completed', createdAt: new Date('2023-05-15') }
-      ];
-      setQuotations(sampleQuotations);
+      showAlert('Failed to load quotations. Please try again later.', 'error');
+      setQuotations([]);
     } finally {
       setIsLoading(false);
     }
