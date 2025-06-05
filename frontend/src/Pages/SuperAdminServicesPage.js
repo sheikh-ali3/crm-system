@@ -205,13 +205,23 @@ const SuperAdminServicesPage = () => {
   const fetchServicesData = async () => {
     try {
       console.log("Fetching services...");
-      const response = await fetchServices();
+      const token = localStorage.getItem('token');
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      
+      const response = await axios.get(
+        `${apiUrl}/services/superadmin`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
       console.log("Services fetched:", response);
       
-      if (Array.isArray(response)) {
-        setServices(response);
-      } else if (response && response.data) {
-        setServices(Array.isArray(response.data) ? response.data : [response.data]);
+      if (Array.isArray(response.data)) {
+        setServices(response.data);
       } else {
         console.warn("Unexpected API response format:", response);
         setServices([]);
