@@ -564,6 +564,34 @@ const SuperAdminServicesPage = () => {
     }
   };
 
+  // Handle delete quotation
+  const handleDeleteQuotation = useCallback(async (quotationId) => {
+    if (window.confirm('Are you sure you want to delete this quotation?')) {
+      try {
+        const token = localStorage.getItem('token');
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+        
+        // Use the correct backend endpoint for deleting quotations
+        await axios.delete(`${apiUrl}/api/quotations/${quotationId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        showAlert('Quotation deleted successfully!', 'success');
+        // Refresh the quotations list after deletion
+        fetchQuotations();
+      } catch (error) {
+        console.error('Error deleting quotation:', error.response?.data || error.message);
+        showAlert(error.response?.data?.message || 'Failed to delete quotation.', 'error');
+      }
+    }
+  }, [fetchQuotations, showAlert]);
+
+  // Handle view quotation click
+  const handleViewQuotation = (quotation) => {
+    setViewQuotation(quotation);
+    setOpenQuotationViewModal(true);
+  };
+
   // Initialize component
   useEffect(() => {
     const initialize = async () => {
@@ -874,10 +902,16 @@ const SuperAdminServicesPage = () => {
                                 View
                               </button>
                               <button 
-                                className="btn-primary"
+                                className="manage-btn"
                                 onClick={() => handleQuotationClick(quotation)}
                               >
                                 Manage
+                              </button>
+                              <button 
+                                className="delete-btn"
+                                onClick={() => handleDeleteQuotation(quotation._id)}
+                              >
+                                Delete
                               </button>
                             </td>
                           </tr>

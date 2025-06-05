@@ -1,7 +1,7 @@
 import React from 'react';
 import './TicketList.css';
 
-const TicketList = ({ tickets, onSelectTicket, loading, error }) => {
+const TicketList = ({ tickets, onSelectTicket, onManageTicket, onDeleteTicket, loading, error }) => {
   // Format date for display
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -63,6 +63,8 @@ const TicketList = ({ tickets, onSelectTicket, loading, error }) => {
         <div className="ticket-header-item ticket-status">Status</div>
         <div className="ticket-header-item ticket-date">Created On</div>
         <div className="ticket-header-item ticket-assigned">Assigned To</div>
+        <div className="ticket-header-item ticket-enterprise">Enterprise</div>
+        <div className="ticket-header-item ticket-actions">Actions</div>
       </div>
       
       {tickets.length === 0 ? (
@@ -76,7 +78,7 @@ const TicketList = ({ tickets, onSelectTicket, loading, error }) => {
             <div 
               key={ticket._id} 
               className="ticket-row"
-              onClick={() => onSelectTicket(ticket)}
+              // onClick={() => onSelectTicket(ticket)} // Row click might interfere with button clicks
             >
               <div className="ticket-cell ticket-id">{ticket.ticketNo || 'TKT-000'}</div>
               <div className="ticket-cell ticket-subject">{ticket.subject}</div>
@@ -102,6 +104,29 @@ const TicketList = ({ tickets, onSelectTicket, loading, error }) => {
                 ) : (
                   <span className="unassigned">Unassigned</span>
                 )}
+              </div>
+              <div className="ticket-cell ticket-enterprise">
+                {ticket.submittedBy?.enterprise?.companyName || 'N/A'}
+              </div>
+              <div className="ticket-cell ticket-actions">
+                <button 
+                  className="manage-ticket-btn"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent row click from triggering
+                    onManageTicket(ticket); 
+                  }}
+                >
+                  Manage
+                </button>
+                <button 
+                  className="delete-ticket-btn"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent row click from triggering
+                    onDeleteTicket(ticket._id);
+                  }}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}
