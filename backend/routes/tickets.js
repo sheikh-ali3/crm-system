@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const Ticket = require('../models/Ticket');
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
+const notificationController = require('../controllers/notificationController');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -131,12 +132,17 @@ router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res)
 // Get tickets for specific admin
 router.get('/admin', authenticateToken, authorizeRole('admin'), async (req, res) => {
   try {
+    console.log('GET /api/tickets/admin called by user:', req.user);
     const tickets = await Ticket.find({ adminId: req.user.id })
       .populate('submittedBy', 'email profile.fullName')
       .sort({ createdAt: -1 });
     res.json(tickets);
   } catch (error) {
-    console.error('Error fetching admin tickets:', error);
+    console.error('Error fetching admin tickets:', {
+      user: req.user,
+      error: error.message,
+      stack: error.stack
+    });
     res.status(500).json({ message: error.message });
   }
 });
@@ -154,6 +160,20 @@ router.post('/:ticketId/responses', authenticateToken, authorizeRole('superadmin
     });
 
     await ticket.save();
+
+    // Create notification for the admin who created the ticket
+    try {
+      await notificationController.createNotification({
+        userId: ticket.adminId,
+        message: `Superadmin responded to your ticket: ${ticket.subject}`,
+        type: 'info',
+        title: 'Ticket Response',
+        relatedTo: { model: 'Ticket', id: ticket._id }
+      });
+    } catch (notifyErr) {
+      console.error('Failed to create notification for ticket response:', notifyErr);
+    }
+
     res.json(ticket);
   } catch (error) {
     console.error('Error adding response:', error);

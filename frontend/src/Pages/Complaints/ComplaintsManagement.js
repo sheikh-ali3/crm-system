@@ -26,6 +26,9 @@ const ComplaintsManagement = () => {
     description: '',
     priority: 'Low'
   });
+  const [responseForm, setResponseForm] = useState({
+    message: ''
+  });
 
   const showAlert = useCallback((message, type = 'success') => {
     setAlert({ show: true, message, type });
@@ -107,7 +110,7 @@ const ComplaintsManagement = () => {
       setTickets(response.data);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching tickets:', error);
+      console.error('Error fetching tickets:', error.response?.data || error.message);
       setError('Failed to fetch tickets. Please try again later.');
       setLoading(false);
     }
@@ -169,6 +172,40 @@ const ComplaintsManagement = () => {
     
     return filtered;
   }, [tickets, filteredStatus, filteredPriority]);
+
+  const handleAddResponse = async (ticketId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/tickets/${ticketId}/responses`,
+        { message: responseForm.message },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Create notification for the admin
+      await axios.post(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/notifications`,
+        {
+          userId: selectedTicket.adminId._id,
+          message: `New response to your ticket: ${selectedTicket.subject}`,
+          type: 'info',
+          title: 'Ticket Response',
+          relatedTo: {
+            model: 'Ticket',
+            id: selectedTicket._id
+          }
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setResponseForm({ message: '' });
+      showAlert('Response added successfully!', 'success');
+      fetchTickets();
+    } catch (error) {
+      console.error('Failed to add response:', error);
+      showAlert(error.response?.data?.message || 'Failed to add response', 'error');
+    }
+  };
 
   return (
     <div className="dashboard-layout">
@@ -334,12 +371,52 @@ const ComplaintsManagement = () => {
             )}
             
             {viewMode === 'detail' && selectedTicket && (
-              <TicketDetail 
-                ticketId={selectedTicket._id} 
-                onBack={() => setViewMode('list')}
-                currentUser={currentUser}
-                admins={admins}
-              />
+              <div className="ticket-detail">
+                <div className="ticket-detail-header">
+                  <button className="back-btn" onClick={() => setViewMode('list')}>
+                    ← Back to List
+                  </button>
+                  <h3>Ticket Details</h3>
+                </div>
+                
+                <div className="ticket-info">
+                  <h4>{selectedTicket.subject}</h4>
+                  <p><strong>From:</strong> {selectedTicket.name} ({selectedTicket.email})</p>
+                  <p><strong>Department:</strong> {selectedTicket.department}</p>
+                  <p><strong>Category:</strong> {selectedTicket.category}</p>
+                  <p><strong>Priority:</strong> {selectedTicket.priority}</p>
+                  <p><strong>Status:</strong> {selectedTicket.status}</p>
+                  <p><strong>Created:</strong> {new Date(selectedTicket.createdAt).toLocaleString()}</p>
+                  <p><strong>Description:</strong> {selectedTicket.description}</p>
+                </div>
+
+                <div className="ticket-responses">
+                  <h4>Responses</h4>
+                  {selectedTicket.responses && selectedTicket.responses.map((response, index) => (
+                    <div key={index} className="response-item">
+                      <p>{response.message}</p>
+                      <small>{new Date(response.createdAt).toLocaleString()}</small>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="add-response">
+                  <h4>Add Response</h4>
+                  <textarea
+                    value={responseForm.message}
+                    onChange={(e) => setResponseForm({ message: e.target.value })}
+                    placeholder="Type your response here..."
+                    rows="4"
+                  ></textarea>
+                  <button 
+                    className="submit-btn"
+                    onClick={() => handleAddResponse(selectedTicket._id)}
+                    disabled={!responseForm.message.trim()}
+                  >
+                    Send Response
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
