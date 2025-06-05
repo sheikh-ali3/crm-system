@@ -149,6 +149,31 @@ const SuperAdminDashboard = () => {
   const [enterpriseServices, setEnterpriseServices] = useState([]);
   const [enterpriseQuotations, setEnterpriseQuotations] = useState([]);
 
+  // Add at the top of the component, after useState imports
+  const [openQuotationViewModal, setOpenQuotationViewModal] = useState(false);
+  const [viewQuotation, setViewQuotation] = useState(null);
+  const [openQuotationForm, setOpenQuotationForm] = useState(false);
+  const [selectedQuotation, setSelectedQuotation] = useState(null);
+  const [quotationForm, setQuotationForm] = useState({
+    status: 'pending',
+    finalPrice: '',
+    superadminNotes: '',
+    proposedDeliveryDate: '',
+    rejectionReason: ''
+  });
+
+  const handleQuotationClick = (quotation) => {
+    setSelectedQuotation(quotation);
+    setQuotationForm({
+      status: quotation.status,
+      finalPrice: quotation.finalPrice || quotation.requestedPrice || '',
+      superadminNotes: quotation.superadminNotes || '',
+      proposedDeliveryDate: quotation.proposedDeliveryDate ? new Date(quotation.proposedDeliveryDate).toISOString().split('T')[0] : '',
+      rejectionReason: quotation.rejectionReason || ''
+    });
+    setOpenQuotationForm(true);
+  };
+
   const showAlert = useCallback((message, type = 'success') => {
     setAlert({ show: true, message, type });
     
@@ -2793,43 +2818,50 @@ const SuperAdminDashboard = () => {
                       <thead>
                         <tr>
                           <th>Quotation #</th>
+                          <th>Service</th>
+                          <th>Admin</th>
                           <th>Enterprise</th>
                           <th>Amount</th>
-                          <th>Created Date</th>
+                          <th>Requested On</th>
                           <th>Status</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {quotations.map((quotation) => (
-                          <tr key={quotation._id} className={`quotation-row ${quotation.status}`}>
-                            <td>{quotation.quotationNumber}</td>
-                            <td>{quotation.enterpriseDetails?.companyName || quotation.adminId?.profile?.fullName || 'Unknown'}</td>
-                            <td>${quotation.totalAmount?.toFixed(2) || '0.00'}</td>
+                          <tr key={quotation._id} className={quotation.status === 'pending' ? 'highlight-row' : ''}>
+                            <td>{quotation.quotationNumber || (quotation._id ? quotation._id.slice(-6) : 'N/A')}</td>
+                            <td>{quotation.serviceId?.name || 'Unknown Service'}</td>
+                            <td>{quotation.adminId?.email || 'Unknown Admin'}</td>
+                            <td>{quotation.enterpriseDetails?.companyName || quotation.adminId?.profile?.fullName || 'Unknown Enterprise'}</td>
+                            <td>{`$${(
+                              quotation.finalPrice ??
+                              quotation.requestedPrice ??
+                              quotation.serviceId?.price ??
+                              0
+                            ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
                             <td>{new Date(quotation.createdAt).toLocaleDateString()}</td>
                             <td>
                               <span className={`status-badge ${quotation.status}`}>
                                 {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
                               </span>
                             </td>
-                            <td className="quotation-actions">
+                            <td>
                               <button
-                                className="view-btn"
-                                onClick={() => handleViewQuotation(quotation)}
+                                className="btn-secondary"
+                                style={{ marginRight: 8 }}
+                                onClick={() => {
+                                  setViewQuotation(quotation);
+                                  setOpenQuotationViewModal(true);
+                                }}
                               >
                                 View
                               </button>
-                              <button
-                                className="edit-btn"
-                                onClick={() => handleEditQuotation(quotation)}
+                              <button 
+                                className="btn-primary"
+                                onClick={() => handleQuotationClick(quotation)}
                               >
-                                Edit
-                              </button>
-                              <button
-                                className="delete-btn"
-                                onClick={() => handleDeleteQuotation(quotation._id)}
-                              >
-                                Delete
+                                Manage
                               </button>
                             </td>
                           </tr>
@@ -3809,6 +3841,193 @@ const SuperAdminDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {openQuotationForm && selectedQuotation && (
+        <div className="modal-backdrop">
+          <div className="modal-content quotation-form-modal">
+            <div className="modal-header">
+              <h2>Manage Quotation Request</h2>
+              <button 
+                className="close-button" 
+                onClick={() => {
+                  setOpenQuotationForm(false);
+                  setSelectedQuotation(null);
+                  setQuotationForm({
+                    status: 'pending',
+                    finalPrice: '',
+                    superadminNotes: '',
+                    proposedDeliveryDate: '',
+                    rejectionReason: ''
+                  });
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="quotation-details">
+              <div className="quotation-info">
+                <h3>Request Details</h3>
+                <p><strong>Service:</strong> {selectedQuotation.serviceId?.name}</p>
+                <p><strong>Enterprise:</strong> {selectedQuotation.enterpriseDetails?.companyName || selectedQuotation.adminId?.profile?.fullName}</p>
+                <p><strong>Contact:</strong> {selectedQuotation.adminId?.email}</p>
+                <p><strong>Requested:</strong> {new Date(selectedQuotation.createdAt).toLocaleDateString()}</p>
+                <p><strong>Request Details:</strong></p>
+                <div className="request-details-box">
+                  {selectedQuotation.requestDetails}
+                </div>
+                {selectedQuotation.customRequirements && (
+                  <>
+                    <p><strong>Custom Requirements:</strong></p>
+                    <div className="request-details-box">
+                      {selectedQuotation.customRequirements}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <form /* onSubmit={handleUpdateQuotation} */ className="quotation-form">
+              <div className="form-group">
+                <label>Status</label>
+                <select 
+                  value={quotationForm.status} 
+                  onChange={(e) => setQuotationForm({...quotationForm, status: e.target.value})}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Final Price (USD)</label>
+                <input 
+                  type="number" 
+                  value={quotationForm.finalPrice} 
+                  onChange={(e) => setQuotationForm({...quotationForm, finalPrice: parseFloat(e.target.value) || ''})}
+                  min="0"
+                  step="0.01"
+                  disabled={quotationForm.status !== 'approved' && quotationForm.status !== 'completed'}
+                />
+              </div>
+              <div className="form-group">
+                <label>Proposed Delivery Date</label>
+                <input 
+                  type="date" 
+                  value={quotationForm.proposedDeliveryDate} 
+                  onChange={(e) => setQuotationForm({...quotationForm, proposedDeliveryDate: e.target.value})}
+                  disabled={quotationForm.status !== 'approved' && quotationForm.status !== 'completed'}
+                />
+              </div>
+              <div className="form-group">
+                <label>SuperAdmin Notes</label>
+                <textarea 
+                  value={quotationForm.superadminNotes} 
+                  onChange={(e) => setQuotationForm({...quotationForm, superadminNotes: e.target.value})}
+                  rows={3}
+                  placeholder="Add notes about this quotation"
+                />
+              </div>
+              {quotationForm.status === 'rejected' && (
+                <div className="form-group">
+                  <label>Rejection Reason</label>
+                  <textarea 
+                    value={quotationForm.rejectionReason} 
+                    onChange={(e) => setQuotationForm({...quotationForm, rejectionReason: e.target.value})}
+                    rows={3}
+                    placeholder="Provide reason for rejection"
+                    required
+                  />
+                </div>
+              )}
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  className="btn-outline" 
+                  onClick={() => {
+                    setOpenQuotationForm(false);
+                    setSelectedQuotation(null);
+                    setQuotationForm({
+                      status: 'pending',
+                      finalPrice: '',
+                      superadminNotes: '',
+                      proposedDeliveryDate: '',
+                      rejectionReason: ''
+                    });
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary" disabled={isLoading}>
+                  {isLoading ? 'Saving...' : 'Update Quotation'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {openQuotationViewModal && viewQuotation && (
+        <div className="modal-backdrop">
+          <div className="modal-content quotation-view-modal">
+            <div className="modal-header">
+              <h2>Quotation Details</h2>
+              <button 
+                className="close-button" 
+                onClick={() => {
+                  setOpenQuotationViewModal(false);
+                  setViewQuotation(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="quotation-details">
+              <div className="quotation-info">
+                <h3>Request Details</h3>
+                <p><strong>Service:</strong> {viewQuotation.serviceId?.name}</p>
+                <p><strong>Enterprise:</strong> {viewQuotation.enterpriseDetails?.companyName || viewQuotation.adminId?.profile?.fullName}</p>
+                <p><strong>Contact:</strong> {viewQuotation.adminId?.email}</p>
+                <p><strong>Requested:</strong> {new Date(viewQuotation.createdAt).toLocaleDateString()}</p>
+                <p><strong>Status:</strong> {viewQuotation.status.charAt(0).toUpperCase() + viewQuotation.status.slice(1)}</p>
+                <p><strong>Final Price:</strong> {viewQuotation.finalPrice ? `$${viewQuotation.finalPrice}` : 'N/A'}</p>
+                <p><strong>Proposed Delivery Date:</strong> {viewQuotation.proposedDeliveryDate ? new Date(viewQuotation.proposedDeliveryDate).toLocaleDateString() : 'N/A'}</p>
+                <p><strong>SuperAdmin Notes:</strong> {viewQuotation.superadminNotes || 'N/A'}</p>
+                <p><strong>Request Details:</strong></p>
+                <div className="request-details-box">
+                  {viewQuotation.requestDetails}
+                </div>
+                {viewQuotation.customRequirements && (
+                  <>
+                    <p><strong>Custom Requirements:</strong></p>
+                    <div className="request-details-box">
+                      {viewQuotation.customRequirements}
+                    </div>
+                  </>
+                )}
+                {viewQuotation.status === 'rejected' && (
+                  <>
+                    <p><strong>Rejection Reason:</strong></p>
+                    <div className="request-details-box">
+                      {viewQuotation.rejectionReason}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="form-actions">
+              <button 
+                type="button" 
+                className="btn-outline" 
+                onClick={() => {
+                  setOpenQuotationViewModal(false);
+                  setViewQuotation(null);
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
