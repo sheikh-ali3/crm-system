@@ -5,45 +5,64 @@ class WebSocketService {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 1000; // Start with 1 second delay
+    this.isConnecting = false;
   }
 
   connect() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.error('No authentication token found');
+    if (this.isConnecting) {
+      console.log('WebSocket connection already in progress');
       return;
     }
 
-    // Use the API URL for WebSocket connection
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-    const wsUrl = apiUrl.replace(/^http/, 'ws') + '/ws?token=' + token;
-    
-    this.ws = new WebSocket(wsUrl);
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('No authentication token found, skipping WebSocket connection');
+      return;
+    }
 
-    this.ws.onopen = () => {
-      console.log('WebSocket connection established');
-      this.reconnectAttempts = 0;
-      this.reconnectDelay = 1000;
-    };
+    this.isConnecting = true;
 
-    this.ws.onmessage = (event) => {
-      try {
-        const { event: eventName, data } = JSON.parse(event.data);
-        const handlers = this.eventHandlers.get(eventName) || [];
-        handlers.forEach(handler => handler(data));
-      } catch (error) {
-        console.error('Error processing WebSocket message:', error);
-      }
-    };
+    try {
+      // Use the API URL for WebSocket connection
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const wsUrl = apiUrl.replace(/^http/, 'ws') + '/api/ws?token=' + token;
+      
+      console.log('Attempting WebSocket connection to:', wsUrl);
+      
+      this.ws = new WebSocket(wsUrl);
 
-    this.ws.onclose = () => {
-      console.log('WebSocket connection closed');
-      this.attemptReconnect();
-    };
+      this.ws.onopen = () => {
+        console.log('WebSocket connection established');
+        this.reconnectAttempts = 0;
+        this.reconnectDelay = 1000;
+        this.isConnecting = false;
+      };
 
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+      this.ws.onmessage = (event) => {
+        try {
+          const { event: eventName, data } = JSON.parse(event.data);
+          const handlers = this.eventHandlers.get(eventName) || [];
+          handlers.forEach(handler => handler(data));
+        } catch (error) {
+          console.error('Error processing WebSocket message:', error);
+        }
+      };
+
+      this.ws.onclose = (event) => {
+        console.log('WebSocket connection closed:', event.code, event.reason);
+        this.isConnecting = false;
+        this.attemptReconnect();
+      };
+
+      this.ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        this.isConnecting = false;
+        // Don't attempt to reconnect on error - let the onclose handler handle it
+      };
+    } catch (error) {
+      console.error('Error creating WebSocket connection:', error);
+      this.isConnecting = false;
+    }
   }
 
   attemptReconnect() {
@@ -56,7 +75,7 @@ class WebSocketService {
         this.reconnectDelay *= 2; // Exponential backoff
       }, this.reconnectDelay);
     } else {
-      console.error('Max reconnection attempts reached');
+      console.log('Max reconnection attempts reached, WebSocket connection disabled');
     }
   }
 
@@ -65,6 +84,8 @@ class WebSocketService {
       this.ws.close();
       this.ws = null;
     }
+    this.isConnecting = false;
+    this.reconnectAttempts = 0;
   }
 
   subscribe(event, handler) {

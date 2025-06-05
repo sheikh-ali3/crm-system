@@ -265,11 +265,22 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       const response = await axios.get(`${API_URL}/api/enterprise/info`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setEnterpriseInfo(response.data);
+      
+      if (response.data) {
+        setEnterpriseInfo(response.data);
+        console.log('Enterprise info updated:', response.data);
+        return response.data;
+      } else {
+        console.warn('No enterprise data received from API');
+        showAlert('Failed to load company information', 'warning');
+        return null;
+      }
     } catch (error) {
       console.error('Failed to fetch enterprise info:', error);
+      showAlert(error.response?.data?.message || 'Failed to load company information', 'error');
+      return null;
     }
-  }, []);
+  }, [showAlert]);
 
   // Sample services data
   const getSampleServices = useCallback(() => {
@@ -2389,14 +2400,11 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       formData.append('business', enterpriseInfo.business);
       formData.append('website', enterpriseInfo.website);
       
-      // Append logo file if a new one was selected
+      // Append logo file ONLY if a new one was selected
       if (logoFile) {
         formData.append('logo', logoFile);
-      } else if (enterpriseInfo.logo) {
-        // Keep existing logo if no new file was uploaded
-        formData.append('existingLogo', enterpriseInfo.logo);
       }
-      
+
       // Submit to API
       const response = await axios.put(
         `${API_URL}/api/enterprise/update-company`,
@@ -2409,10 +2417,18 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         }
       );
       
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      
       // Update state with response data
       setEnterpriseInfo(prevState => ({
         ...prevState,
-        ...response.data
+        name: response.data.name || prevState.name,
+        industry: response.data.industry || prevState.industry,
+        business: response.data.business || prevState.business,
+        website: response.data.website || prevState.website,
+        logo: response.data.logo || prevState.logo
       }));
       
       // Clear logo file state
@@ -2426,6 +2442,13 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       }));
       
       showAlert('Company information updated successfully!', 'success');
+      
+      // Re-fetch enterprise info to ensure persistence
+      const updatedInfo = await fetchEnterpriseInfo();
+      if (updatedInfo) {
+        setEnterpriseInfo(updatedInfo);
+      }
+
     } catch (error) {
       console.error('Failed to update company info:', error);
       showAlert(error.response?.data?.message || 'Failed to update company information', 'error');
