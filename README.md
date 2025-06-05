@@ -19,7 +19,7 @@ This CRM system provides functionality for managing customer relationships, admi
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/crm-system.git
+   git clone https://github.com/sheikh-ali3/crm-system.git
    cd crm-system
    ```
 
