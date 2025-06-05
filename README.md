@@ -19,7 +19,7 @@ This CRM system provides functionality for managing customer relationships, admi
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/crm-system.git
+   git clone https://github.com/sheikh-ali3/crm-system.git
    cd crm-system
    ```
 
@@ -87,7 +87,7 @@ This CRM system provides functionality for managing customer relationships, admi
    ```bash
    # Backend (in backend directory)
    cd backend
-   npm start
+   npm run dev
 
    # Frontend (in frontend directory, in a separate terminal)
    cd frontend
@@ -148,5 +148,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Contact
 
 For questions or support, please contact:
-- Technical Support: support@example.com
-- Development Team: dev@example.com 
+- Technical Support: cmadmin@moaqa.com
+- Development Team: instructorali123@gmail.com 
