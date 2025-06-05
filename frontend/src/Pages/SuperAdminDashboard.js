@@ -1744,7 +1744,8 @@ const SuperAdminDashboard = () => {
       }
 
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      const response = await axios.get(`${apiUrl}/api/quotations`, {
+      // Use the same route as SuperAdminServicesPage.js
+      const response = await axios.get(`${apiUrl}/services/superadmin/quotations`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'

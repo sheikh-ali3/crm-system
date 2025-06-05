@@ -6,6 +6,8 @@ const { authenticateToken, authorizeRole } = require('../middleware/authMiddlewa
 // Service routes
 // Services CRUD for SuperAdmin
 router.post('/', authenticateToken, authorizeRole('superadmin'), serviceController.createService);
+router.get('/superadmin/quotations', authenticateToken, authorizeRole('superadmin'), serviceController.getAllQuotations);
+router.put('/superadmin/quotations/:id', authenticateToken, authorizeRole('superadmin'), serviceController.updateQuotationStatus);
 router.get('/superadmin', authenticateToken, authorizeRole('superadmin'), serviceController.getAllServices);
 router.get('/superadmin/:id', authenticateToken, authorizeRole('superadmin'), serviceController.getServiceById);
 router.put('/:id', authenticateToken, authorizeRole('superadmin'), serviceController.updateService);
@@ -19,11 +21,10 @@ router.get('/admin/:id', authenticateToken, authorizeRole('admin'), serviceContr
 router.post('/admin/:serviceId/quotation', authenticateToken, authorizeRole('admin'), serviceController.requestQuotation);
 router.get('/admin/quotations', authenticateToken, authorizeRole('admin'), serviceController.getAdminQuotations);
 
-// Quotation management for SuperAdmin
-router.get('/superadmin/quotations', authenticateToken, authorizeRole('superadmin'), serviceController.getAllQuotations);
-router.put('/superadmin/quotations/:id', authenticateToken, authorizeRole('superadmin'), serviceController.updateQuotationStatus);
-
 // Service statistics for SuperAdmin
 router.get('/superadmin/stats/summary', authenticateToken, authorizeRole('superadmin'), serviceController.getServiceStats);
+
+// Place generic /:id route after all specific routes
+router.get('/:id', authenticateToken, authorizeRole('superadmin'), serviceController.getServiceById);
 
 module.exports = router; 
