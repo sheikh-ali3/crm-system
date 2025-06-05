@@ -4,14 +4,34 @@ const Schema = mongoose.Schema;
 const TicketSchema = new Schema({
   ticketNo: {
     type: String,
-    required: true,
     unique: true
+  },
+  adminId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  name: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
   },
   subject: {
     type: String,
     required: true
   },
-  description: {
+  department: {
+    type: String,
+    required: true
+  },
+  relatedTo: {
+    type: String,
+    required: true
+  },
+  message: {
     type: String,
     required: true
   },
@@ -58,9 +78,9 @@ const TicketSchema = new Schema({
     type: Date
   },
   attachments: [{
-    fileName: String,
-    fileType: String,
-    filePath: String,
+    filename: String,
+    path: String,
+    mimetype: String,
     uploadedAt: {
       type: Date,
       default: Date.now
@@ -76,37 +96,41 @@ const TicketSchema = new Schema({
       type: Date,
       default: Date.now
     }
+  }],
+  responses: [{
+    message: {
+      type: String,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    }
   }]
 }, {
   timestamps: true
 });
 
-// Auto-generate a ticket number before saving
-TicketSchema.pre('save', async function(next) {
-  if (!this.isNew) {
-    return next();
-  }
-  
-  try {
-    // Get the current date components
+// Generate ticket number before saving
+TicketSchema.pre('validate', function(next) {
+  if (!this.ticketNo) {
     const date = new Date();
     const year = date.getFullYear().toString().substr(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    
-    // Find the count of tickets for the current month
-    const count = await this.constructor.countDocuments({
-      createdAt: {
-        $gte: new Date(date.getFullYear(), date.getMonth(), 1),
-        $lt: new Date(date.getFullYear(), date.getMonth() + 1, 1)
-      }
-    });
-    
-    // Generate the ticket number: TKT-YY-MM-XXXX
-    this.ticketNo = `TKT-${year}-${month}-${(count + 1).toString().padStart(4, '0')}`;
-    next();
-  } catch (error) {
-    next(error);
+    const randomNum = Math.floor(Math.random() * 9000) + 1000;
+    this.ticketNo = `TKT-${year}-${month}-${randomNum}`;
   }
+  next();
+});
+
+// Update the updatedAt timestamp before saving
+TicketSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
 module.exports = mongoose.model('Ticket', TicketSchema); 

@@ -1,7 +1,7 @@
 import React from 'react';
 import './TicketList.css';
 
-const TicketList = ({ tickets, onSelectTicket, currentUser }) => {
+const TicketList = ({ tickets, onSelectTicket, loading, error }) => {
   // Format date for display
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -38,6 +38,22 @@ const TicketList = ({ tickets, onSelectTicket, currentUser }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="ticket-list">
+        <div className="loading">Loading tickets...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="ticket-list">
+        <div className="error">{error}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="ticket-list">
       <div className="ticket-list-header">
@@ -56,7 +72,7 @@ const TicketList = ({ tickets, onSelectTicket, currentUser }) => {
         </div>
       ) : (
         <div className="ticket-list-body">
-          {tickets.map((ticket) => (
+          {tickets.map(ticket => (
             <div 
               key={ticket._id} 
               className="ticket-row"
@@ -76,12 +92,12 @@ const TicketList = ({ tickets, onSelectTicket, currentUser }) => {
               </div>
               <div className="ticket-cell ticket-date">{formatDate(ticket.createdAt)}</div>
               <div className="ticket-cell ticket-assigned">
-                {ticket.assignedTo ? (
+                {ticket.adminId ? (
                   <div className="assigned-user">
                     <div className="user-initial">
-                      {ticket.assignedTo.fullName ? ticket.assignedTo.fullName.charAt(0) : '?'}
+                      {ticket.adminId.profile?.fullName ? ticket.adminId.profile.fullName.charAt(0) : '?'}
                     </div>
-                    <span>{ticket.assignedTo.fullName || 'Unknown'}</span>
+                    <span>{ticket.adminId.profile?.fullName || 'Unknown'}</span>
                   </div>
                 ) : (
                   <span className="unassigned">Unassigned</span>

@@ -2841,7 +2841,7 @@ const SuperAdminDashboard = () => {
             </div>
           )}
           
-          {['reports', 'expenses', 'receipts', 'complaints'].includes(activeTab) && (
+          {['reports', 'expenses', 'receipts'].includes(activeTab) && (
             <div className="placeholder-section">
               <h2>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Management</h2>
               <p>This section is under development. Please check back later.</p>

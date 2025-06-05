@@ -36,6 +36,7 @@ const userRoutes = require('./routes/userRoutes');
 const quotationRoutes = require('./routes/quotations');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const enterpriseRoutes = require('./routes/enterpriseRoutes');
+const ticketRoutes = require('./routes/tickets');
 
 // Load environment variables
 dotenv.config();
@@ -113,6 +114,9 @@ app.use(cors({
 // Parse JSON request bodies
 app.use(express.json());
 
+// Serve static files from the uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Use the product routes
 app.use('/api', productRoutes);
 
@@ -142,6 +146,9 @@ app.use('/api/invoices', invoiceRoutes);
 
 // Use enterprise routes
 app.use('/api/enterprise', enterpriseRoutes);
+
+// Use ticket routes
+app.use('/api/tickets', ticketRoutes);
 
 // Direct route for superadmin quotations to fix 500 error
 app.get('/services/superadmin/quotations', authenticateToken, authorizeRole('superadmin'), async (req, res) => {

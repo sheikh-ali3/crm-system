@@ -7,7 +7,11 @@ import ThemeToggle from '../Components/UI/ThemeToggle';
 import AdminSidebar from '../Components/Layout/AdminSidebar';
 import DashboardCard from '../Components/Dashboard/DashboardCard';
 import CustomAlert from '../Components/Common/CustomAlert';
+<<<<<<< HEAD
+import TicketForm from '../Components/TicketForm';
+=======
 import websocketService from '../services/websocketService';
+>>>>>>> 7942b572bb21dc66e6cb47a1b57516c4fc3462b9
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -2217,61 +2221,10 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         return (
           <div className="section-container">
             <h1 className="section-title">Create Support Ticket</h1>
-            <form className="ticket-form" onSubmit={e => e.preventDefault()}>
-              <div className="form-group">
-                <label>Title</label>
-                <input
-                  type="text"
-                  name="subject"
-                  value={ticketForm.subject}
-                  onChange={handleTicketFormChange}
-                  placeholder="Ticket title"
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <select
-                  name="category"
-                  value={ticketForm.category}
-                  onChange={handleTicketFormChange}
-                  required
-                >
-                  <option value="">Select category</option>
-                  <option value="Technical">Technical Issue</option>
-                  <option value="Billing">Billing Issue</option>
-                  <option value="Feature">Feature Request</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  name="description"
-                  value={ticketForm.description}
-                  onChange={handleTicketFormChange}
-                  placeholder="Describe your issue in detail"
-                  required
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label>Priority</label>
-                <select
-                  name="priority"
-                  value={ticketForm.priority}
-                  onChange={handleTicketFormChange}
-                  required
-                >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
-                </select>
-              </div>
-              <button type="button" className="submit-btn" onClick={handleSubmitTicket}>
-                Submit Ticket
-              </button>
-            </form>
+            <TicketForm 
+              onClose={() => setActiveTab('dashboard')} 
+              onSuccess={() => showAlert('Ticket submitted successfully!', 'success')} 
+            />
           </div>
         );
       case 'users':

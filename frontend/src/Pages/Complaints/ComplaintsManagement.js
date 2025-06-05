@@ -4,10 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import './ComplaintsManagement.css';
 import SuperAdminSidebar from '../../Components/Layout/SuperAdminSidebar';
 import ThemeToggle from '../../Components/UI/ThemeToggle';
-import TicketList from '../../Components/Complaints/TicketList';
-import TicketDetail from '../../Components/Complaints/TicketDetail';
-import NewTicketForm from '../../Components/Complaints/NewTicketForm';
-import TicketStats from '../../Components/Complaints/TicketStats';
+import TicketList from './Components/TicketList';
+import TicketDetail from './Components/TicketDetail';
 
 const ComplaintsManagement = () => {
   const navigate = useNavigate();
@@ -15,12 +13,7 @@ const ComplaintsManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedTicket, setSelectedTicket] = useState(null);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail', 'new'
-  const [stats, setStats] = useState({
-    total: 0,
-    byStatus: { open: 0, inProgress: 0, resolved: 0, closed: 0 },
-    byPriority: { critical: 0, high: 0, medium: 0, low: 0 }
-  });
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'detail'
   const [alert, setAlert] = useState({ show: false, message: '', type: 'success' });
   const [currentUser, setCurrentUser] = useState(null);
   const [admins, setAdmins] = useState([]);
@@ -64,31 +57,16 @@ const ComplaintsManagement = () => {
       setLoading(true);
       
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/tickets`, 
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tickets`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+      console.log('Tickets API response:', response.data);
       setTickets(response.data);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching tickets:', error);
       setError('Failed to fetch tickets. Please try again later.');
       setLoading(false);
-    }
-  }, []);
-
-  const fetchTicketStats = useCallback(async () => {
-    try {
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.get(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/tickets/stats/summary`, 
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setStats(response.data);
-    } catch (error) {
-      console.error('Error fetching ticket stats:', error);
     }
   }, []);
 
@@ -113,12 +91,11 @@ const ComplaintsManagement = () => {
       const isAuth = await checkAuth();
       if (isAuth) {
         fetchTickets();
-        fetchTicketStats();
       }
     };
     
     initPage();
-  }, [checkAuth, fetchTickets, fetchTicketStats]);
+  }, [checkAuth, fetchTickets]);
 
   useEffect(() => {
     if (currentUser) {
@@ -130,23 +107,6 @@ const ComplaintsManagement = () => {
     setSelectedTicket(ticket);
     setViewMode('detail');
   }, []);
-
-  const handleCreateTicket = useCallback((newTicket) => {
-    showAlert('Ticket created successfully', 'success');
-    fetchTickets();
-    fetchTicketStats();
-    setViewMode('list');
-  }, [fetchTickets, fetchTicketStats, showAlert]);
-
-  const handleUpdateTicket = useCallback((updatedTicket) => {
-    setTickets(prev => 
-      prev.map(ticket => 
-        ticket._id === updatedTicket._id ? updatedTicket : ticket
-      )
-    );
-    showAlert('Ticket updated successfully', 'success');
-    fetchTicketStats();
-  }, [fetchTicketStats, showAlert]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -207,9 +167,6 @@ const ComplaintsManagement = () => {
         
         {/* Content Area */}
         <div className="complaints-content">
-          {/* Ticket Statistics */}
-          <TicketStats stats={stats} />
-          
           {/* Ticket Controls */}
           <div className="ticket-controls">
             <div className="ticket-filters">
@@ -237,13 +194,6 @@ const ComplaintsManagement = () => {
                 <option value="Low">Low</option>
               </select>
             </div>
-            
-            <button 
-              className="create-ticket-btn"
-              onClick={() => setViewMode('new')}
-            >
-              Create New Ticket
-            </button>
           </div>
           
           {/* Tickets View */}
@@ -261,20 +211,23 @@ const ComplaintsManagement = () => {
               <TicketDetail 
                 ticketId={selectedTicket._id} 
                 onBack={() => setViewMode('list')}
-                onUpdate={handleUpdateTicket}
                 currentUser={currentUser}
                 admins={admins}
               />
             )}
-            
-            {viewMode === 'new' && (
-              <NewTicketForm 
-                onSubmit={handleCreateTicket}
-                onCancel={() => setViewMode('list')}
-                currentUser={currentUser}
-              />
-            )}
           </div>
+        </div>
+
+        {/* Debug/Error Section */}
+        <div style={{ background: '#f9f9f9', color: '#333', padding: '1rem', margin: '1rem 0', border: '1px solid #ccc', borderRadius: '6px' }}>
+          <h4>Debug: Raw Tickets Data</h4>
+          <pre style={{ maxHeight: 200, overflow: 'auto', fontSize: 12 }}>{JSON.stringify(tickets, null, 2)}</pre>
+          {error && (
+            <div style={{ color: 'red', marginTop: '1rem' }}>Error: {error}</div>
+          )}
+          {!error && !loading && tickets && tickets.length === 0 && (
+            <div style={{ color: '#888', marginTop: '1rem' }}>No tickets found. (API returned empty array)</div>
+          )}
         </div>
       </div>
     </div>
