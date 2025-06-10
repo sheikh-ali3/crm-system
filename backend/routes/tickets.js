@@ -275,19 +275,37 @@ router.delete('/:ticketId/responses/:responseId', authenticateToken, authorizeRo
   }
 });
 
-// Delete a ticket by ID (Superadmin only)
-router.delete('/:id', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
+// Delete a ticket by ID
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-
     const ticket = await Ticket.findById(id);
 
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
 
-    await Ticket.findByIdAndDelete(id);
+    // Check if user is admin
+    if (req.user.role === 'admin') {
+      // Admin can only delete tickets with Open or Closed status
+      if (!['Open', 'Closed'].includes(ticket.status)) {
+        return res.status(403).json({ 
+          message: 'Admins can only delete tickets with Open or Closed status' 
+        });
+      }
+      // Admin can only delete their own tickets
+      if (ticket.adminId.toString() !== req.user.id) {
+        return res.status(403).json({ 
+          message: 'You can only delete tickets assigned to you' 
+        });
+      }
+    } else if (req.user.role !== 'superadmin') {
+      return res.status(403).json({ 
+        message: 'Only admins and superadmins can delete tickets' 
+      });
+    }
 
+    await Ticket.findByIdAndDelete(id);
     res.json({ message: 'Ticket deleted successfully' });
   } catch (error) {
     console.error('Error deleting ticket:', error);

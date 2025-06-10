@@ -2247,8 +2247,9 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                   tickets={tickets}
                   onSelectTicket={() => { /* Admin doesn't need to select individual tickets for detail */ } }
                   onManageTicket={() => { /* Admin doesn't manage tickets like SuperAdmin */ } }
-                  onDeleteTicket={() => { /* Admin doesn't delete tickets */ } }
+                  onDeleteTicket={handleDeleteTicket}
                   onViewTicket={handleViewTicket}
+                  userRole="admin"
                 />
               )}
             </div>
@@ -2927,6 +2928,20 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     setShowViewTicketModal(false);
     setSelectedTicket(null);
   }, []);
+
+  const handleDeleteTicket = async (ticketId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/tickets/${ticketId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      showAlert('Ticket deleted successfully', 'success');
+      fetchTickets(); // Refresh the tickets list
+    } catch (error) {
+      console.error('Failed to delete ticket:', error);
+      showAlert(error.response?.data?.message || 'Failed to delete ticket', 'error');
+    }
+  };
 
   return (
     <div className="admin-dashboard">

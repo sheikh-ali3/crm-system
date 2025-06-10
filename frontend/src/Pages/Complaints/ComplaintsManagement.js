@@ -475,6 +475,7 @@ const ComplaintsManagement = () => {
                 onManageTicket={handleManageTicketClick}
                 onDeleteTicket={handleDeleteTicket}
                 onViewTicket={handleViewTicket}
+                userRole="superadmin"
               />
             )}
           </div>

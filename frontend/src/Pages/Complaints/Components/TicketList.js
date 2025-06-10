@@ -1,7 +1,7 @@
 import React from 'react';
 import './TicketList.css';
 
-const TicketList = ({ tickets, onSelectTicket, onManageTicket, onDeleteTicket, onViewTicket, loading, error }) => {
+const TicketList = ({ tickets, onSelectTicket, onManageTicket, onDeleteTicket, onViewTicket, loading, error, userRole }) => {
   // Format date for display
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -118,6 +118,17 @@ const TicketList = ({ tickets, onSelectTicket, onManageTicket, onDeleteTicket, o
                 >
                   View
                 </button>
+                {userRole === 'superadmin' && (
+                  <button
+                    className="manage-ticket-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onManageTicket(ticket);
+                    }}
+                  >
+                    Manage
+                  </button>
+                )}
                 <button 
                   className="delete-ticket-btn"
                   onClick={(e) => {
