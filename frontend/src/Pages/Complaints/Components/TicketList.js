@@ -118,15 +118,6 @@ const TicketList = ({ tickets, onSelectTicket, onManageTicket, onDeleteTicket, o
                 >
                   View
                 </button>
-                <button
-                  className="manage-ticket-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onManageTicket(ticket);
-                  }}
-                >
-                  Manage
-                </button>
                 <button 
                   className="delete-ticket-btn"
                   onClick={(e) => {
