@@ -7,6 +7,7 @@ import ThemeToggle from '../../Components/UI/ThemeToggle';
 import TicketList from './Components/TicketList';
 import TicketDetail from './Components/TicketDetail';
 import Modal from 'react-modal';
+import TicketDetailsModal from './Components/TicketDetailsModal';
 
 const ComplaintsManagement = () => {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ const ComplaintsManagement = () => {
     message: ''
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
 
   const showAlert = useCallback((message, type = 'success') => {
     setAlert({ show: true, message, type });
@@ -296,6 +298,16 @@ const ComplaintsManagement = () => {
     }
   }, [fetchTickets, showAlert]);
 
+  const handleViewTicket = (ticket) => {
+    setSelectedTicket(ticket);
+    setShowViewModal(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setShowViewModal(false);
+    setSelectedTicket(null);
+  };
+
   return (
     <div className="dashboard-layout">
       {/* Sidebar */}
@@ -462,6 +474,7 @@ const ComplaintsManagement = () => {
                 onSelectTicket={handleSelectTicket}
                 onManageTicket={handleManageTicketClick}
                 onDeleteTicket={handleDeleteTicket}
+                onViewTicket={handleViewTicket}
               />
             )}
           </div>
@@ -525,6 +538,13 @@ const ComplaintsManagement = () => {
           </div>
         )}
       </Modal>
+
+      <TicketDetailsModal
+        isOpen={showViewModal}
+        onClose={handleCloseViewModal}
+        ticket={selectedTicket}
+        userRole={currentUser?.role}
+      />
     </div>
   );
 };

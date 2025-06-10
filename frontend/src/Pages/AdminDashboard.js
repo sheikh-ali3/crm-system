@@ -9,6 +9,8 @@ import DashboardCard from '../Components/Dashboard/DashboardCard';
 import CustomAlert from '../Components/Common/CustomAlert';
 import TicketForm from '../Components/TicketForm';
 import websocketService from '../services/websocketService';
+import TicketDetailsModal from './Complaints/Components/TicketDetailsModal';
+import TicketList from './Complaints/Components/TicketList';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -140,6 +142,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     description: '',
     budget: 0
   });
+  const [showViewTicketModal, setShowViewTicketModal] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
 
   // Initialize checking authentication
   useEffect(() => {
@@ -2212,54 +2216,42 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         );
       case 'tickets':
         return (
-          <div className="section-container">
-            <h1 className="section-title">Tickets</h1>
-            <div className="ticket-controls">
-              <button 
-                className="create-btn" 
-                onClick={() => setShowCreateTicketForm(true)}
-                style={{ display: showCreateTicketForm ? 'none' : 'block' }}
-              >
-                Create New Ticket
+          <div className="dashboard-content-section">
+            <h2>Tickets</h2>
+            <div className="controls-section">
+              <button className="create-ticket-btn" onClick={() => setShowCreateTicketForm(true)}>
+                <span className="icon">+</span> Create New Ticket
               </button>
             </div>
-            {showCreateTicketForm && (
-              <TicketForm
-                onClose={() => setShowCreateTicketForm(false)}
-                onSuccess={fetchTickets}
-              />
-            )}
             
-            {ticketsLoading ? (
-              <div>Loading tickets...</div>
-            ) : ticketsError ? (
-              <div style={{ color: 'red' }}>{ticketsError}</div>
-            ) : tickets.length === 0 ? (
-              <div>No tickets found.</div>
-            ) : (
-              <table className="ticket-list-table">
-                <thead>
-                  <tr>
-                    <th>Ticket No</th>
-                    <th>Subject</th>
-                    <th>Priority</th>
-                    <th>Status</th>
-                    <th>Created On</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tickets.map(ticket => (
-                    <tr key={ticket._id}>
-                      <td>{ticket.ticketNo || 'TKT-000'}</td>
-                      <td>{ticket.subject}</td>
-                      <td>{ticket.priority}</td>
-                      <td>{ticket.status}</td>
-                      <td>{new Date(ticket.createdAt).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {showCreateTicketForm && (
+              <div className="create-ticket-form-container">
+                <TicketForm
+                  ticketForm={ticketForm}
+                  handleTicketFormChange={handleTicketFormChange}
+                  handleSubmitTicket={handleSubmitTicket}
+                  onClose={() => setShowCreateTicketForm(false)}
+                />
+              </div>
             )}
+
+            <div className="tickets-view">
+              {ticketsLoading ? (
+                <div>Loading tickets...</div>
+              ) : ticketsError ? (
+                <div style={{ color: 'red' }}>{ticketsError}</div>
+              ) : tickets.length === 0 ? (
+                <div>No tickets found.</div>
+              ) : (
+                <TicketList
+                  tickets={tickets}
+                  onSelectTicket={() => { /* Admin doesn't need to select individual tickets for detail */ } }
+                  onManageTicket={() => { /* Admin doesn't manage tickets like SuperAdmin */ } }
+                  onDeleteTicket={() => { /* Admin doesn't delete tickets */ } }
+                  onViewTicket={handleViewTicket}
+                />
+              )}
+            </div>
           </div>
         );
       case 'users':
@@ -2926,6 +2918,16 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     }
   }, [activeTab, fetchTickets]);
 
+  const handleViewTicket = useCallback((ticket) => {
+    setSelectedTicket(ticket);
+    setShowViewTicketModal(true);
+  }, []);
+
+  const handleCloseViewModal = useCallback(() => {
+    setShowViewTicketModal(false);
+    setSelectedTicket(null);
+  }, []);
+
   return (
     <div className="admin-dashboard">
       <div className="dashboard-frame">
@@ -3218,6 +3220,13 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           {alert.message}
           <button className="close-btn" onClick={() => setAlert({ ...alert, show: false })}>×</button>
         </div>
+      )}
+
+      {showViewTicketModal && selectedTicket && (
+        <TicketDetailsModal
+          ticket={selectedTicket}
+          onClose={handleCloseViewModal}
+        />
       )}
     </div>
   );

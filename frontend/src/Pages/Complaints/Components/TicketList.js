@@ -1,7 +1,7 @@
 import React from 'react';
 import './TicketList.css';
 
-const TicketList = ({ tickets, onSelectTicket, onManageTicket, onDeleteTicket, loading, error }) => {
+const TicketList = ({ tickets, onSelectTicket, onManageTicket, onDeleteTicket, onViewTicket, loading, error }) => {
   // Format date for display
   const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
@@ -109,11 +109,20 @@ const TicketList = ({ tickets, onSelectTicket, onManageTicket, onDeleteTicket, l
                 {ticket.submittedBy?.enterprise?.companyName || 'N/A'}
               </div>
               <div className="ticket-cell ticket-actions">
-                <button 
+                <button
+                  className="view-ticket-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewTicket(ticket);
+                  }}
+                >
+                  View
+                </button>
+                <button
                   className="manage-ticket-btn"
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent row click from triggering
-                    onManageTicket(ticket); 
+                    e.stopPropagation();
+                    onManageTicket(ticket);
                   }}
                 >
                   Manage
