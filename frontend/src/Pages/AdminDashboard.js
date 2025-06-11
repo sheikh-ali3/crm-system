@@ -144,6 +144,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
   });
   const [showViewTicketModal, setShowViewTicketModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showProductDetails, setShowProductDetails] = useState(false);
 
   // Initialize checking authentication
   useEffect(() => {
@@ -1271,7 +1273,10 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                         <td className="product-date">{product.endDate || '-'}</td>
                         <td className="product-action">
                           {product.purchased ? (
-                            <button className="view-btn">
+                            <button 
+                              className="view-btn"
+                              onClick={() => handleViewProduct(product)}
+                            >
                               Open
                             </button>
                           ) : (
@@ -2943,6 +2948,11 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     }
   };
 
+  const handleViewProduct = (product) => {
+    setSelectedProduct(product);
+    setShowProductDetails(true);
+  };
+
   return (
     <div className="admin-dashboard">
       <div className="dashboard-frame">
@@ -3237,11 +3247,60 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         </div>
       )}
 
-      {showViewTicketModal && selectedTicket && (
-        <TicketDetailsModal
-          ticket={selectedTicket}
-          onClose={handleCloseViewModal}
-        />
+      {/* Ticket Details Modal */}
+      <TicketDetailsModal
+        isOpen={showViewTicketModal}
+        onClose={handleCloseViewModal}
+        ticket={selectedTicket}
+        userRole="admin"
+      />
+
+      {showProductDetails && selectedProduct && (
+        <div className="modal-backdrop">
+          <div className="modal-content product-details-modal">
+            <div className="modal-header">
+              <h2>{selectedProduct.name}</h2>
+              <button 
+                className="close-button" 
+                onClick={() => {
+                  setShowProductDetails(false);
+                  setSelectedProduct(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="product-details">
+              <div className="product-info">
+                <p><strong>Description:</strong> {selectedProduct.description}</p>
+                <p><strong>Product ID:</strong> {selectedProduct.productId}</p>
+                <p><strong>Status:</strong> {selectedProduct.purchased ? 'Active' : 'Not Purchased'}</p>
+                <p><strong>Start Date:</strong> {selectedProduct.startDate || 'N/A'}</p>
+                <p><strong>End Date:</strong> {selectedProduct.endDate || 'N/A'}</p>
+              </div>
+              <div className="product-actions">
+                <button 
+                  className="btn-primary"
+                  onClick={() => {
+                    // Add your product opening logic here
+                    window.open(selectedProduct.url, '_blank');
+                  }}
+                >
+                  Launch Product
+                </button>
+                <button 
+                  className="btn-secondary"
+                  onClick={() => {
+                    setShowProductDetails(false);
+                    setSelectedProduct(null);
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

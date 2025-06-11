@@ -2388,3 +2388,287 @@
 .invoice-row:hover {
   background-color: #f8f9fa;
 }
+
+/* Product Details Modal */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.product-details-modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: #333;
+}
+
+.product-details {
+  padding: 20px;
+}
+
+.product-info {
+  margin-bottom: 20px;
+}
+
+.product-info p {
+  margin: 10px 0;
+  color: #333;
+  line-height: 1.5;
+}
+
+.product-info strong {
+  color: #666;
+  margin-right: 8px;
+}
+
+.product-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid #eaeaea;
+}
+
+.product-actions button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.product-actions .btn-primary {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+}
+
+.product-actions .btn-primary:hover {
+  background-color: #3a75b5;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.2);
+}
+
+.product-actions .btn-secondary {
+  background-color: #f8f9fa;
+  color: #333;
+  border: 1px solid #dee2e6;
+}
+
+.product-actions .btn-secondary:hover {
+  background-color: #e9ecef;
+}
+
+/* Ticket Details Modal */
+.Modal {
+  position: absolute;
+  background: var(--card-bg);
+  padding: 30px;
+  border-radius: var(--card-radius);
+  outline: none;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  z-index: 1001;
+}
+
+.Overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ticket-details-modal {
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.ticket-details-container {
+  padding: 20px;
+}
+
+.ticket-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.ticket-details-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.ticket-info {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.info-group {
+  margin-bottom: 15px;
+}
+
+.info-group label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.info-group p {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.status.open { background-color: #e3f2fd; color: #1976d2; }
+.status.in-progress { background-color: #fff3e0; color: #f57c00; }
+.status.resolved { background-color: #e8f5e9; color: #388e3c; }
+.status.closed { background-color: #f5f5f5; color: #616161; }
+
+.responses-section {
+  margin-top: 30px;
+}
+
+.responses-section h3 {
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+.responses-list {
+  max-height: 300px;
+  overflow-y: auto;
+  margin-bottom: 20px;
+}
+
+.response-item {
+  background: var(--card-bg);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.response-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 0.9em;
+}
+
+.response-role {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.response-time {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}
+
+.response-message {
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.own-response {
+  background-color: var(--primary-light);
+  border-left: 4px solid var(--primary-color);
+}
+
+.other-response {
+  background-color: var(--bg-light);
+  border-left: 4px solid var(--border-color);
+}
+
+.submit-response-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.submit-response-btn:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.2);
+}
+
+.submit-response-btn:disabled {
+  background-color: var(--border-color);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}

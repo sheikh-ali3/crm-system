@@ -37,6 +37,7 @@ const quotationRoutes = require('./routes/quotations');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const enterpriseRoutes = require('./routes/enterpriseRoutes');
 const ticketRoutes = require('./routes/tickets');
+const complaintRoutes = require('./routes/complaintRoutes'); // Import complaint routes
 
 // Load environment variables
 dotenv.config();
@@ -149,6 +150,9 @@ app.use('/api/enterprise', enterpriseRoutes);
 
 // Use ticket routes
 app.use('/api/tickets', ticketRoutes);
+
+// Use complaint routes
+app.use('/api/complaints', complaintRoutes);
 
 // Direct route for superadmin quotations to fix 500 error
 app.get('/services/superadmin/quotations', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
