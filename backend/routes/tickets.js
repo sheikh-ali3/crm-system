@@ -147,11 +147,12 @@ router.get('/admin', authenticateToken, authorizeRole('admin'), async (req, res)
   }
 });
 
-// Update a ticket by ID (Superadmin only)
-router.put('/:id', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
+// Update a ticket by ID (Superadmin and Admin can update)
+router.put('/:id', authenticateToken, authorizeRole('superadmin', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
     const { status, message } = req.body; // Expect status and an optional message for response
+    const userRole = req.user.role; // Get the role of the authenticated user
 
     const ticket = await Ticket.findById(id);
 
@@ -168,8 +169,8 @@ router.put('/:id', authenticateToken, authorizeRole('superadmin'), async (req, r
     if (message && message.trim() !== '') {
        ticket.responses.push({
          message: message,
-         // Assuming responses schema includes user info, add req.user.id if needed
-         // respondedBy: req.user.id // Uncomment if your response schema has this field
+         role: userRole, // Include the user's role in the response
+         createdAt: new Date()
        });
        // Optional: Create notification for admin/user who submitted the ticket
        // try {
