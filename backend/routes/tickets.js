@@ -5,6 +5,7 @@ const path = require('path');
 const Ticket = require('../models/Ticket');
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 const notificationController = require('../controllers/notificationController');
+const websocketService = require('../services/websocketService');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -81,6 +82,10 @@ router.post('/', authenticateToken, upload.array('attachments', 5), async (req, 
       { path: 'submittedBy', select: 'email profile.fullName' }
     ]);
 
+    // Emit WebSocket event for new ticket
+    websocketService.notifyEnterpriseAdmins('ticket_created', savedTicket);
+    websocketService.notifyUser(savedTicket.submittedBy._id, 'ticket_created_by_user', savedTicket);
+    
     console.log('Ticket populated with user details');
     res.status(201).json(savedTicket);
   } catch (error) {
@@ -194,6 +199,13 @@ router.put('/:id', authenticateToken, authorizeRole('superadmin', 'admin'), asyn
       { path: 'submittedBy', select: 'email profile.fullName enterprise.companyName' }
     ]);
 
+    // Emit WebSocket event for updated ticket
+    websocketService.notifyEnterpriseAdmins('ticket_updated', updatedTicket);
+    // Notify the user who submitted the ticket if their ticket was updated by an admin
+    if (userRole === 'admin') {
+      websocketService.notifyUser(updatedTicket.submittedBy._id, 'ticket_updated_for_user', updatedTicket);
+    }
+
     res.json(updatedTicket);
   } catch (error) {
     console.error('Error updating ticket:', error);
@@ -276,37 +288,21 @@ router.delete('/:ticketId/responses/:responseId', authenticateToken, authorizeRo
   }
 });
 
-// Delete a ticket by ID
-router.delete('/:id', authenticateToken, async (req, res) => {
+// Delete a ticket by ID (Superadmin and Admin can delete)
+router.delete('/:id', authenticateToken, authorizeRole('superadmin', 'admin'), async (req, res) => {
   try {
-    const { id } = req.params;
-    const ticket = await Ticket.findById(id);
+    const ticket = await Ticket.findById(req.params.id);
 
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
     }
 
-    // Check if user is admin
-    if (req.user.role === 'admin') {
-      // Admin can only delete tickets with Open or Closed status
-      if (!['Open', 'Closed'].includes(ticket.status)) {
-        return res.status(403).json({ 
-          message: 'Admins can only delete tickets with Open or Closed status' 
-        });
-      }
-      // Admin can only delete their own tickets
-      if (ticket.adminId.toString() !== req.user.id) {
-        return res.status(403).json({ 
-          message: 'You can only delete tickets assigned to you' 
-        });
-      }
-    } else if (req.user.role !== 'superadmin') {
-      return res.status(403).json({ 
-        message: 'Only admins and superadmins can delete tickets' 
-      });
-    }
+    await ticket.deleteOne();
 
-    await Ticket.findByIdAndDelete(id);
+    // Emit WebSocket event for deleted ticket
+    websocketService.notifyEnterpriseAdmins('ticket_deleted', { id: req.params.id });
+    websocketService.notifyUser(ticket.submittedBy._id, 'ticket_deleted_for_user', { id: req.params.id, subject: ticket.subject });
+
     res.json({ message: 'Ticket deleted successfully' });
   } catch (error) {
     console.error('Error deleting ticket:', error);

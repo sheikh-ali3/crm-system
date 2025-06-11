@@ -2850,11 +2850,56 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       showAlert('Invoice status updated', 'success');
     };
 
+    // Handle ticket-related WebSocket events
+    const handleTicketCreated = (newTicket) => {
+      console.log('WebSocket: New ticket created:', newTicket);
+      setTickets(prevTickets => [newTicket, ...prevTickets]);
+      showAlert(`New ticket #${newTicket.ticketNo} created!`, 'info');
+      fetchTicketStats(); // Refresh ticket stats
+    };
+
+    const handleTicketUpdated = (updatedTicket) => {
+      console.log('WebSocket: Ticket updated:', updatedTicket);
+      setTickets(prevTickets => 
+        prevTickets.map(ticket => 
+          ticket._id === updatedTicket._id ? updatedTicket : ticket
+        )
+      );
+      showAlert(`Ticket #${updatedTicket.ticketNo} updated.`, 'info');
+      fetchTicketStats(); // Refresh ticket stats
+    };
+
+    const handleTicketDeleted = ({ id, subject }) => {
+      console.log('WebSocket: Ticket deleted:', id);
+      setTickets(prevTickets => prevTickets.filter(ticket => ticket._id !== id));
+      showAlert(`Ticket ${subject ? `#${subject}` : ''} deleted.`, 'info');
+      fetchTicketStats(); // Refresh ticket stats
+    };
+
+    const handleTicketUpdatedForUser = (updatedTicket) => {
+      console.log('WebSocket: Your ticket updated:', updatedTicket);
+      showAlert(`Your ticket #${updatedTicket.ticketNo} has been updated.`, 'info');
+      // No direct state update needed for admin's own tickets in this case, 
+      // as the general handleTicketUpdated covers it. This is primarily for notifications.
+    };
+
+    const handleTicketDeletedForUser = ({ id, subject }) => {
+      console.log('WebSocket: Your ticket deleted:', id);
+      showAlert(`Your ticket ${subject ? `#${subject}` : ''} has been deleted.`, 'info');
+      // No direct state update needed for admin's own tickets in this case.
+    };
+
     // Subscribe to events
     websocketService.subscribe('invoice_created', handleInvoiceCreated);
     websocketService.subscribe('invoice_updated', handleInvoiceUpdated);
     websocketService.subscribe('invoice_deleted', handleInvoiceDeleted);
     websocketService.subscribe('invoice_status_updated', handleInvoiceStatusUpdated);
+    websocketService.subscribe('ticket_created', handleTicketCreated);
+    websocketService.subscribe('ticket_updated', handleTicketUpdated);
+    websocketService.subscribe('ticket_deleted', handleTicketDeleted);
+    websocketService.subscribe('ticket_created_by_user', handleTicketCreated);
+    websocketService.subscribe('ticket_updated_for_user', handleTicketUpdatedForUser);
+    websocketService.subscribe('ticket_deleted_for_user', handleTicketDeletedForUser);
 
     // Cleanup on unmount
     return () => {
@@ -2862,6 +2907,12 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       websocketService.unsubscribe('invoice_updated', handleInvoiceUpdated);
       websocketService.unsubscribe('invoice_deleted', handleInvoiceDeleted);
       websocketService.unsubscribe('invoice_status_updated', handleInvoiceStatusUpdated);
+      websocketService.unsubscribe('ticket_created', handleTicketCreated);
+      websocketService.unsubscribe('ticket_updated', handleTicketUpdated);
+      websocketService.unsubscribe('ticket_deleted', handleTicketDeleted);
+      websocketService.unsubscribe('ticket_created_by_user', handleTicketCreated);
+      websocketService.unsubscribe('ticket_updated_for_user', handleTicketUpdatedForUser);
+      websocketService.unsubscribe('ticket_deleted_for_user', handleTicketDeletedForUser);
       websocketService.disconnect();
     };
   }, []);
@@ -2912,7 +2963,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       setTickets(response.data);
       setTicketsLoading(false);
     } catch (error) {
-      console.error('Error fetching tickets:', error.response?.data || error.message);
+      console.error('Error fetching tickets:', error.response?.data || error.message, error); // Added full error object logging
       setTicketsError('Failed to fetch tickets. Please try again later.');
       setTicketsLoading(false);
     }
@@ -2942,7 +2993,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
       showAlert('Ticket deleted successfully', 'success');
-      fetchTickets(); // Refresh the tickets list
+      // fetchTickets(); // Removed: WebSocket should handle update
     } catch (error) {
       console.error('Failed to delete ticket:', error);
       showAlert(error.response?.data?.message || 'Failed to delete ticket', 'error');
@@ -3248,60 +3299,28 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         </div>
       )}
 
-      {/* Ticket Details Modal */}
-      <TicketDetailsModal
-        isOpen={showViewTicketModal}
-        onClose={handleCloseViewModal}
-        ticket={selectedTicket}
-        userRole="admin"
-      />
-
+      {/* Product Details Modal */}
       {showProductDetails && selectedProduct && (
         <div className="modal-backdrop">
-          <div className="modal-content product-details-modal">
-            <div className="modal-header">
-              <h2>{selectedProduct.name}</h2>
-              <button 
-                className="close-button" 
-                onClick={() => {
-                  setShowProductDetails(false);
-                  setSelectedProduct(null);
-                }}
-              >
-                ×
-              </button>
-            </div>
-            <div className="product-details">
-              <div className="product-info">
-                <p><strong>Description:</strong> {selectedProduct.description}</p>
-                <p><strong>Product ID:</strong> {selectedProduct.productId}</p>
-                <p><strong>Status:</strong> {selectedProduct.purchased ? 'Active' : 'Not Purchased'}</p>
-                <p><strong>Start Date:</strong> {selectedProduct.startDate || 'N/A'}</p>
-                <p><strong>End Date:</strong> {selectedProduct.endDate || 'N/A'}</p>
-              </div>
-              <div className="product-actions">
-                <button 
-                  className="btn-primary"
-                  onClick={() => {
-                    // Add your product opening logic here
-                    window.open(selectedProduct.url, '_blank');
-                  }}
-                >
-                  Launch Product
-                </button>
-                <button 
-                  className="btn-secondary"
-                  onClick={() => {
-                    setShowProductDetails(false);
-                    setSelectedProduct(null);
-                  }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
+          <div className="product-details-modal">
+            <button className="close-button" onClick={() => setShowProductDetails(false)}>×</button>
+            <h2>{selectedProduct.name} Details</h2>
+            <p>{selectedProduct.description}</p>
+            <p>Product ID: {selectedProduct.productId}</p>
+            {/* Add more product details here as needed */}
+            <button className="launch-product-btn" onClick={() => showAlert(`Launching ${selectedProduct.name}...`, 'info')}>Launch Product</button>
           </div>
         </div>
+      )}
+
+      {/* Ticket Details Modal */}
+      {showViewTicketModal && selectedTicket && (
+        <TicketDetailsModal
+          isOpen={showViewTicketModal}
+          onClose={handleCloseViewModal}
+          ticket={selectedTicket}
+          userRole={currentUser?.role}
+        />
       )}
     </div>
   );

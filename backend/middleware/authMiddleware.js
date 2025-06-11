@@ -78,15 +78,16 @@ const authenticateToken = async (req, res, next) => {
 };
 
 // Middleware to check user role
-const authorizeRole = (role) => {
+const authorizeRole = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ message: 'Authentication required.' });
     }
     
-    if (req.user.role !== role) {
+    // Check if the user's role is included in the allowed roles
+    if (!roles.includes(req.user.role)) {
       return res.status(403).json({ 
-        message: `Access denied. ${role} role required.` 
+        message: `Access denied. ${roles.join(' or ')} role required.` 
       });
     }
     

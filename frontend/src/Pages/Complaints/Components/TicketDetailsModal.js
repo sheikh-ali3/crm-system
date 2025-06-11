@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import axios from 'axios';
 import './TicketDetailsModal.css';
+import websocketService from '../../../services/websocketService';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
@@ -47,6 +48,9 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
       setCurrentResponses(response.data.responses); // Update responses from the returned ticket
       setNewResponse('');
       showAlert('Response sent successfully!', 'success');
+      // Emit WebSocket event for ticket update
+      websocketService.notifyEnterpriseAdmins('ticket_updated', response.data); // Assuming response.data is the updated ticket object
+      websocketService.notifyUser(ticket.submittedBy._id, 'ticket_updated_for_user', response.data);
       if (onResponseAdded) {
         onResponseAdded(); // Callback to refresh tickets in parent component
       }
