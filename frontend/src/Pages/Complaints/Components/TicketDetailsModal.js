@@ -37,16 +37,10 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-<<<<<<< HEAD
       console.log('Submitting response for ticket ID:', ticket._id); // Keep this for debugging
       // Use PUT to update the ticket with a new response
       const response = await axios.put(`${API_URL}/api/tickets/${ticket._id}`, 
         { message: newResponse, status: ticket.status, role: userRole }, // Send message, current status, and user role
-=======
-      console.log('Submitting response for ticket ID:', ticket._id);
-      await axios.put(`${API_URL}/api/tickets/${ticket._id}`, 
-        { message: newResponse, status: ticket.status, role: userRole }, 
->>>>>>> 3572aac88cab4edfaf3ebb03069babe3943860ee
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       
@@ -58,12 +52,8 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
       }
     } catch (error) {
       console.error('Error submitting response:', error.response?.data || error.message);
-<<<<<<< HEAD
       const errorMessage = error.response?.data?.message || 'Failed to send response.';
       showAlert(errorMessage, 'error');
-=======
-      showAlert(error.response?.data?.message || 'Failed to send response.', 'error');
->>>>>>> 3572aac88cab4edfaf3ebb03069babe3943860ee
     } finally {
       setLoading(false);
     }
