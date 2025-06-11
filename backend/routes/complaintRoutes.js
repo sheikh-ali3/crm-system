@@ -1,4 +1,7 @@
-// ... existing imports and routes ...
+const express = require('express');
+const router = express.Router();
+const Complaint = require('../models/complaintModel');
+const auth = require('../middleware/authMiddleware').authenticateToken;
 
 // Get responses for a ticket
 router.get('/:id/responses', auth, async (req, res) => {

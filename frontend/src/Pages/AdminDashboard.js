@@ -160,6 +160,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           fetchInvoices(),
           fetchReports(),
           fetchTicketStats(),
+          fetchTickets(), // Ensure tickets are fetched on mount
           fetchNotifications()
         ]);
       }
@@ -2896,20 +2897,20 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
   // Fetch tickets from backend
   const fetchTickets = useCallback(async () => {
     try {
-      setTicketsLoading(true);
-      setTicketsError(null);
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/tickets/admin`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      setTicketsLoading(true);
+      const response = await axios.get(
+        `${API_URL}/api/tickets/admin`, // Changed to admin-specific endpoint
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setTickets(response.data);
       setTicketsLoading(false);
     } catch (error) {
-      setTicketsError('Failed to fetch tickets.');
-      setTicketsLoading(false);
       console.error('Error fetching tickets:', error.response?.data || error.message);
+      setTicketsError('Failed to fetch tickets. Please try again later.');
+      setTicketsLoading(false);
     }
-  }, [API_URL]);
+  }, [showAlert]);
 
   // Fetch tickets on mount and after ticket creation
   useEffect(() => {
