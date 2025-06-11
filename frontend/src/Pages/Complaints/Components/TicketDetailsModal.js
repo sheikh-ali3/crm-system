@@ -5,26 +5,17 @@ import './TicketDetailsModal.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole }) => {
-  const [responses, setResponses] = useState([]);
+const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded }) => {
   const [newResponse, setNewResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: '', type: 'success' });
+  const [currentResponses, setCurrentResponses] = useState([]);
 
   useEffect(() => {
     if (isOpen && ticket) {
-      fetchResponses();
+      setCurrentResponses(ticket.responses || []);
     }
   }, [isOpen, ticket]);
-
-  const fetchResponses = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/complaints/${ticket._id}/responses`);
-      setResponses(response.data);
-    } catch (error) {
-      console.error('Error fetching responses:', error);
-    }
-  };
 
   const showAlert = (message, type = 'success') => {
     setAlert({ show: true, message, type });
@@ -38,23 +29,31 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole }) => {
       return;
     }
 
+    if (!ticket || !ticket._id) {
+      showAlert('Ticket ID is missing. Cannot submit response.', 'error');
+      return;
+    }
+
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_URL}/api/complaints/${ticket._id}/responses`, {
-        message: newResponse,
-        role: userRole
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      console.log('Submitting response for ticket ID:', ticket._id); // Keep this for debugging
+      // Use PUT to update the ticket with a new response
+      const response = await axios.put(`${API_URL}/api/tickets/${ticket._id}`, 
+        { message: newResponse, status: ticket.status, role: userRole }, // Send message, current status, and user role
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      
+      setCurrentResponses(response.data.responses); // Update responses from the returned ticket
       setNewResponse('');
-      fetchResponses(); // Refresh responses
       showAlert('Response sent successfully!', 'success');
+      if (onResponseAdded) {
+        onResponseAdded(); // Callback to refresh tickets in parent component
+      }
     } catch (error) {
       console.error('Error submitting response:', error.response?.data || error.message);
-      showAlert(error.response?.data?.message || 'Failed to send response.', 'error');
+      const errorMessage = error.response?.data?.message || 'Failed to send response.';
+      showAlert(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -103,20 +102,24 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole }) => {
         <div className="responses-section">
           <h3>Responses</h3>
           <div className="responses-list">
-            {responses.map((response, index) => (
-              <div 
-                key={index} 
-                className={`response-item ${response.role === userRole ? 'own-response' : 'other-response'}`}
-              >
-                <div className="response-header">
-                  <span className="response-role">{response.role}</span>
-                  <span className="response-time">
-                    {new Date(response.createdAt).toLocaleString()}
-                  </span>
+            {currentResponses.length > 0 ? (
+              currentResponses.map((response, index) => (
+                <div 
+                  key={index} 
+                  className={`response-item ${response.role === userRole ? 'own-response' : 'other-response'}`}
+                >
+                  <div className="response-header">
+                    <span className="response-role">{response.role}</span>
+                    <span className="response-time">
+                      {new Date(response.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="response-message">{response.message}</p>
                 </div>
-                <p className="response-message">{response.message}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="no-responses">No responses yet.</p>
+            )}
           </div>
         </div>
 
