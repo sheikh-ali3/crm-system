@@ -14,13 +14,14 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
 
   useEffect(() => {
     if (isOpen && ticket) {
+      console.log('TicketDetailsModal received userRole:', userRole);
       // Sort responses by creation time to show them in chronological order
       const sortedResponses = [...(ticket.responses || [])].sort((a, b) => 
         new Date(a.createdAt) - new Date(b.createdAt)
       );
       setCurrentResponses(sortedResponses);
     }
-  }, [isOpen, ticket]);
+  }, [isOpen, ticket, userRole]);
 
   const showAlert = (message, type = 'success') => {
     setAlert({ show: true, message, type });
@@ -172,7 +173,9 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
           <h3>Conversation</h3>
           <div className="responses-list">
             {currentResponses.length > 0 ? (
-              currentResponses.map((response, index) => (
+              currentResponses.map((response, index) => {
+                console.log(`Response ${index} role:`, response.role); // DEBUG: Log each response's role
+                return (
                 <div 
                   key={index} 
                   className={`response-item ${response.role === 'superadmin' ? 'superadmin-response' : 'admin-response'}`}
@@ -187,7 +190,7 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
                   </div>
                   <p className="response-message">{response.message}</p>
                 </div>
-              ))
+              )})
             ) : (
               <p className="no-responses">No messages yet. Start the conversation!</p>
             )}

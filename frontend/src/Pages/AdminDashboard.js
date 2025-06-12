@@ -236,6 +236,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       // Store the complete user object including permissions
       if (response.data.user) {
         setCurrentUser(response.data.user);
+        console.log('AdminDashboard currentUser after auth:', response.data.user); // DEBUG: Log currentUser
         // Store permissions for conditional rendering
         setUserPermissions(response.data.user.permissions || {});
         console.log('User permissions:', response.data.user.permissions);
@@ -3384,7 +3385,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           isOpen={showViewTicketModal}
           onClose={handleCloseViewModal}
           ticket={selectedTicket}
-          userRole={currentUser?.role}
+          userRole="admin" // Explicitly set role for admin dashboard
         />
       )}
     </div>

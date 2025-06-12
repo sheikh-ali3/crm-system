@@ -1,12 +1,20 @@
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.75) !important; /* Dark, semi-transparent overlay */
+}
+
 .ticket-details-modal {
   max-width: 800px;
   width: 90%;
   max-height: 90vh;
   overflow-y: auto;
+  background-color: #ffffff !important; /* Explicitly set a solid white background for the entire modal */
+  border-radius: var(--card-radius);
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
 }
 
 .ticket-details-container {
-  padding: 20px;
+  padding: 0;
 }
 
 .ticket-details-header {
@@ -32,7 +40,7 @@
 }
 
 .ticket-info {
-  background: var(--card-bg);
+  background: var(--bg-light);
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 20px;
@@ -68,7 +76,7 @@
 
 .responses-section {
   margin-top: 30px;
-  background-color: #f0f2f5 !important;
+  background-color: #f0f2f5 !important; /* Solid light grey background for the chat area */
   border-radius: 12px;
   padding: 20px;
 }
@@ -86,43 +94,47 @@
   padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  overflow-anchor: none;
+  gap: 15px; /* Consistent spacing between messages */
+  overflow-anchor: none; /* Prevent browser from automatically adjusting scroll position */
 }
 
 .response-item {
   padding: 12px 16px;
   border-radius: 12px;
   position: relative;
-  display: block !important;
-  min-width: 100px;
-  word-wrap: break-word;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-  min-height: 40px;
-  width: fit-content;
-  max-width: calc(100% - 40px);
+  display: block !important; /* Ensure it renders as a distinct block element */
+  min-width: 100px; /* Give messages a minimum width to prevent collapse */
+  word-wrap: break-word; /* Ensure long words break */
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1); /* Subtle shadow for definition */
+  min-height: 40px; /* Ensure minimum height for visibility */
+  width: fit-content; /* Make bubble width fit content */
+  max-width: calc(100% - 40px); /* Adjust max-width to leave some margin */
 }
 
 .response-item.admin-response {
-  background-color: #f44336 !important;
-  color: #ffffff !important;
+  background-color: #bbdefb !important; /* Admin: Clear, solid light blue */
+  color: #212121 !important; /* Admin: Dark grey text */
   align-self: flex-start !important;
   border-bottom-left-radius: 4px;
-  border: 1px solid #d32f2f !important;
-  text-align: left !important;
-  margin-right: auto !important;
-  margin-left: unset !important;
+  border: 1px solid #90caf9 !important; /* Admin: Blue border */
+  text-align: left !important; /* Text within bubble is left-aligned */
+  margin-right: auto !important; /* Push to left */
+  margin-left: 0 !important; /* Explicitly set left margin to 0 */
+  float: left !important; /* Force float to left */
+  clear: both !important; /* Clear floats to ensure proper stacking */
 }
 
 .response-item.superadmin-response {
-  background-color: #2196f3 !important;
-  color: #ffffff !important;
+  background-color: #dcf8c6 !important; /* Super Admin: Clear, solid light green (WhatsApp style) */
+  color: #212121 !important; /* Super Admin: Dark grey text */
   align-self: flex-end !important;
   border-bottom-right-radius: 4px;
-  border: 1px solid #1976d2 !important;
-  text-align: left !important;
-  margin-left: auto !important;
-  margin-right: unset !important;
+  border: 1px solid #a5d6a7 !important; /* Super Admin: Green border */
+  text-align: left !important; /* Text within bubble is left-aligned */
+  margin-left: auto !important; /* Push to right */
+  margin-right: 0 !important; /* Explicitly set right margin to 0 */
+  float: right !important; /* Force float to right */
+  clear: both !important; /* Clear floats to ensure proper stacking */
 }
 
 .response-header {
@@ -134,11 +146,11 @@
 }
 
 .response-item.admin-response .response-header {
-  color: #ffffff !important;
+  color: #424242 !important; /* Consistent darker grey for header text */
 }
 
 .response-item.superadmin-response .response-header {
-  color: #ffffff !important;
+  color: #424242 !important; /* Consistent darker grey for header text */
 }
 
 .response-role {
@@ -158,7 +170,7 @@
 
 .response-form {
   margin-top: 20px;
-  background: var(--card-bg);
+  background-color: #ffffff !important; /* Explicitly set a solid white background for the response form */
   padding: 15px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
