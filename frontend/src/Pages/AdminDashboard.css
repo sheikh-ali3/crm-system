@@ -2672,3 +2672,111 @@
   transform: none;
   box-shadow: none;
 }
+
+/* Ticket View Styles */
+.tickets-view {
+  min-height: 400px;
+  position: relative;
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.loading-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.error-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--error-color);
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 20px;
+  background: var(--error-bg);
+  border-radius: var(--card-radius);
+  border: 1px solid var(--error-border);
+}
+
+.no-tickets {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  text-align: center;
+}
+
+.create-ticket-form-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.controls-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 20px;
+}
+
+.create-ticket-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--button-radius);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.create-ticket-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.create-ticket-btn .icon {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Ensure ticket list container has a fixed height */
+.ticket-list {
+  height: 100%;
+  min-height: 400px;
+  overflow: hidden;
+}
+
+.ticket-list-body {
+  height: calc(100% - 50px); /* Subtract header height */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.ticket-list-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ticket-list-body::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+.ticket-list-body::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 4px;
+}

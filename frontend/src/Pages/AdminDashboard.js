@@ -15,6 +15,7 @@ import TicketList from './Complaints/Components/TicketList';
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const AdminDashboard = ({ activeTab: initialActiveTab }) => {
+  console.count('AdminDashboard render');
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
@@ -146,6 +147,14 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductDetails, setShowProductDetails] = useState(false);
+
+  // Ref to hold the current ticketsLoading state to prevent stale closures in useCallback
+  const ticketsLoadingRef = useRef(ticketsLoading);
+
+  // Keep the ref in sync with the state
+  useEffect(() => {
+    ticketsLoadingRef.current = ticketsLoading;
+  }, [ticketsLoading]);
 
   // Initialize checking authentication
   useEffect(() => {
@@ -2243,11 +2252,11 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
 
             <div className="tickets-view">
               {ticketsLoading ? (
-                <div>Loading tickets...</div>
+                <div className="loading-indicator">Loading tickets...</div>
               ) : ticketsError ? (
-                <div style={{ color: 'red' }}>{ticketsError}</div>
+                <div className="error-message">{ticketsError}</div>
               ) : tickets.length === 0 ? (
-                <div>No tickets found.</div>
+                <div className="no-tickets">No tickets found.</div>
               ) : (
                 <TicketList
                   tickets={tickets}
@@ -2953,28 +2962,84 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
 
   // Fetch tickets from backend
   const fetchTickets = useCallback(async () => {
+    console.count('fetchTickets execution');
+    if (ticketsLoadingRef.current) {
+      return; // Prevent multiple simultaneous fetches
+    }
+    
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        setTicketsError('Authentication required. Please log in again.');
+        return;
+      }
+
       setTicketsLoading(true);
+      setTicketsError(null);
+      
       const response = await axios.get(
-        `${API_URL}/api/tickets/admin`, // Changed to admin-specific endpoint
+        `${API_URL}/api/tickets/admin`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setTickets(response.data);
-      setTicketsLoading(false);
+      
+      if (Array.isArray(response.data)) {
+        setTickets(response.data);
+        console.log('Tickets state after setTickets:', response.data.length);
+      } else {
+        console.error('Error: API response is not an array:', response.data);
+        setTicketsError('Unexpected data format from server.');
+      }
     } catch (error) {
-      console.error('Error fetching tickets:', error.response?.data || error.message, error); // Added full error object logging
+      console.error('Error fetching tickets:', error.response?.data || error.message, error);
       setTicketsError('Failed to fetch tickets. Please try again later.');
+    } finally {
       setTicketsLoading(false);
     }
-  }, [showAlert]);
+  }, []);
 
-  // Fetch tickets on mount and after ticket creation
+  // Fetch tickets only when the tickets tab is active
   useEffect(() => {
+    console.count('useEffect activeTab trigger');
     if (activeTab === 'tickets') {
       fetchTickets();
     }
   }, [activeTab, fetchTickets]);
+
+  // WebSocket event handlers for tickets
+  useEffect(() => {
+    const handleTicketCreated = (newTicket) => {
+      setTickets(prevTickets => [
+        newTicket,
+        ...prevTickets
+      ]);
+      showAlert(`New ticket #${newTicket.ticketNo} created!`, 'info');
+    };
+
+    const handleTicketUpdated = (updatedTicket) => {
+      setTickets(prevTickets => 
+        prevTickets.map(ticket => 
+          ticket._id === updatedTicket._id ? updatedTicket : ticket
+        )
+      );
+      showAlert(`Ticket #${updatedTicket.ticketNo} updated.`, 'info');
+    };
+
+    const handleTicketDeleted = ({ id }) => {
+      setTickets(prevTickets => prevTickets.filter(ticket => ticket._id !== id));
+      showAlert('Ticket deleted.', 'info');
+    };
+
+    // Subscribe to WebSocket events
+    websocketService.subscribe('ticket_created', handleTicketCreated);
+    websocketService.subscribe('ticket_updated', handleTicketUpdated);
+    websocketService.subscribe('ticket_deleted', handleTicketDeleted);
+
+    return () => {
+      websocketService.unsubscribe('ticket_created', handleTicketCreated);
+      websocketService.unsubscribe('ticket_updated', handleTicketUpdated);
+      websocketService.unsubscribe('ticket_deleted', handleTicketDeleted);
+    };
+  }, [showAlert]);
 
   const handleViewTicket = useCallback((ticket) => {
     setSelectedTicket(ticket);
