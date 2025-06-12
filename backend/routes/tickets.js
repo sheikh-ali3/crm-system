@@ -156,10 +156,35 @@ router.get('/admin', authenticateToken, authorizeRole('admin'), async (req, res)
 router.put('/:id', authenticateToken, authorizeRole('superadmin', 'admin'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, message } = req.body; // Expect status and an optional message for response
-    const userRole = req.user.role; // Get the role of the authenticated user
+    const { status, message, role } = req.body;
+    const userRole = req.user.role;
+
+    console.log('Updating ticket:', { 
+      id, 
+      status, 
+      message, 
+      role, 
+      userRole,
+      userId: req.user.id,
+      body: req.body 
+    });
+
+    if (!id) {
+      return res.status(400).json({ message: 'Ticket ID is required' });
+    }
+
+    // Validate message if provided
+    if (message && typeof message !== 'string') {
+      return res.status(400).json({ message: 'Message must be a string' });
+    }
+
+    // Validate status if provided
+    if (status && !['Open', 'In Progress', 'Resolved', 'Closed'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
 
     const ticket = await Ticket.findById(id);
+    console.log('Found ticket:', ticket ? ticket._id : 'not found');
 
     if (!ticket) {
       return res.status(404).json({ message: 'Ticket not found' });
@@ -172,44 +197,129 @@ router.put('/:id', authenticateToken, authorizeRole('superadmin', 'admin'), asyn
 
     // Add response if message is provided
     if (message && message.trim() !== '') {
-       ticket.responses.push({
-         message: message,
-         role: userRole, // Include the user's role in the response
-         createdAt: new Date()
-       });
-       // Optional: Create notification for admin/user who submitted the ticket
-       // try {
-       //   await notificationController.createNotification({
-       //     userId: ticket.submittedBy, // Or ticket.adminId depending on who to notify
-       //     message: `Your ticket (${ticket.subject}) has a new update.`, // Customize message
-       //     type: 'info',
-       //     title: 'Ticket Updated',
-       //     relatedTo: { model: 'Ticket', id: ticket._id }
-       //   });
-       // } catch (notifyErr) {
-       //   console.error('Failed to create notification for ticket update:', notifyErr);
-       // }
+      try {
+        // Ensure all existing responses have a role field
+        if (ticket.responses && ticket.responses.length > 0) {
+          ticket.responses = ticket.responses.map(response => ({
+            ...response.toObject(),
+            role: response.role || userRole // Use existing role or current user's role
+          }));
+        }
+
+        const newResponse = {
+          message: message.trim(),
+          role: userRole,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        console.log('Adding new response:', newResponse);
+        
+        // Initialize responses array if it doesn't exist
+        if (!ticket.responses) {
+          ticket.responses = [];
+        }
+        
+        ticket.responses.push(newResponse);
+        console.log('Response added to ticket');
+
+        // Create notification for the ticket submitter
+        try {
+          if (!ticket.submittedBy) {
+            console.error('Ticket has no submittedBy field:', ticket);
+            throw new Error('Ticket has no submittedBy field');
+          }
+
+          const notificationData = {
+            userId: ticket.submittedBy,
+            message: `New response added to your ticket: ${ticket.subject}`,
+            type: 'info',
+            title: 'Ticket Response',
+            relatedTo: {
+              model: 'Ticket',
+              id: ticket._id
+            }
+          };
+          
+          console.log('Creating notification with data:', notificationData);
+          await notificationController.createNotification(notificationData);
+          console.log('Notification created successfully');
+        } catch (notifyErr) {
+          console.error('Failed to create notification for ticket response:', {
+            error: notifyErr.message,
+            stack: notifyErr.stack,
+            ticket: ticket._id
+          });
+          // Don't fail the request if notification fails
+        }
+      } catch (responseErr) {
+        console.error('Error adding response:', {
+          error: responseErr.message,
+          stack: responseErr.stack,
+          ticket: ticket._id
+        });
+        return res.status(400).json({ 
+          message: 'Error adding response',
+          error: responseErr.message 
+        });
+      }
     }
 
-    const updatedTicket = await ticket.save();
+    try {
+      console.log('Saving ticket with responses:', {
+        ticketId: ticket._id,
+        responseCount: ticket.responses.length
+      });
+      
+      const updatedTicket = await ticket.save();
+      console.log('Ticket saved successfully:', updatedTicket._id);
 
-    // Populate updated ticket to return full details
-    await updatedTicket.populate([
-      { path: 'adminId', select: 'email profile.fullName' },
-      { path: 'submittedBy', select: 'email profile.fullName enterprise.companyName' }
-    ]);
+      // Populate updated ticket to return full details
+      await updatedTicket.populate([
+        { path: 'adminId', select: 'email profile.fullName' },
+        { path: 'submittedBy', select: 'email profile.fullName enterprise.companyName' }
+      ]);
+      console.log('Ticket populated successfully');
 
-    // Emit WebSocket event for updated ticket
-    websocketService.notifyEnterpriseAdmins('ticket_updated', updatedTicket);
-    // Notify the user who submitted the ticket if their ticket was updated by an admin
-    if (userRole === 'admin') {
-      websocketService.notifyUser(updatedTicket.submittedBy._id, 'ticket_updated_for_user', updatedTicket);
+      // Emit WebSocket event for updated ticket
+      try {
+        websocketService.notifyEnterpriseAdmins('ticket_updated', updatedTicket);
+        if (updatedTicket.submittedBy && updatedTicket.submittedBy._id) {
+          websocketService.notifyUser(updatedTicket.submittedBy._id, 'ticket_updated_for_user', updatedTicket);
+        }
+        console.log('WebSocket notifications sent');
+      } catch (wsError) {
+        console.error('WebSocket notification error:', {
+          error: wsError.message,
+          stack: wsError.stack
+        });
+        // Don't fail the request if WebSocket notification fails
+      }
+
+      res.json(updatedTicket);
+    } catch (saveErr) {
+      console.error('Error saving ticket:', {
+        error: saveErr.message,
+        stack: saveErr.stack,
+        ticket: ticket._id
+      });
+      return res.status(500).json({ 
+        message: 'Error saving ticket',
+        error: saveErr.message 
+      });
     }
-
-    res.json(updatedTicket);
   } catch (error) {
-    console.error('Error updating ticket:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error updating ticket:', {
+      error: error.message,
+      stack: error.stack,
+      params: req.params,
+      body: req.body,
+      user: req.user
+    });
+    return res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
   }
 });
 

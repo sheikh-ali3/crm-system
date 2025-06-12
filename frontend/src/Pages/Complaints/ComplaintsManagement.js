@@ -201,31 +201,21 @@ const ComplaintsManagement = () => {
   const handleAddResponse = async (ticketId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/tickets/${ticketId}/responses`,
-        { message: responseForm.message },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      // Create notification for the admin
-      await axios.post(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/notifications`,
-        {
-          userId: selectedTicket.adminId._id,
-          message: `New response to your ticket: ${selectedTicket.subject}`,
-          type: 'info',
-          title: 'Ticket Response',
-          relatedTo: {
-            model: 'Ticket',
-            id: selectedTicket._id
-          }
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tickets/${ticketId}`,
+        { 
+          message: responseForm.message,
+          status: selectedTicket.status || 'Open',
+          role: 'superadmin'
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      setResponseForm({ message: '' });
-      showAlert('Response added successfully!', 'success');
-      fetchTickets();
+      
+      if (response.data) {
+        setResponseForm({ message: '' });
+        showAlert('Response added successfully!', 'success');
+        fetchTickets();
+      }
     } catch (error) {
       console.error('Failed to add response:', error);
       showAlert(error.response?.data?.message || 'Failed to add response', 'error');

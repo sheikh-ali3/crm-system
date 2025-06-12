@@ -38,25 +38,93 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      console.log('Submitting response for ticket ID:', ticket._id); // Keep this for debugging
+      console.log('Submitting response for ticket ID:', ticket._id);
+      
+      // Validate and sanitize the response message
+      const sanitizedMessage = newResponse.trim();
+      if (!sanitizedMessage) {
+        showAlert('Response cannot be empty!', 'error');
+        setLoading(false);
+        return;
+      }
+
+      // Prepare the request data
+      const requestData = {
+        message: sanitizedMessage,
+        status: ticket.status || 'Open',
+        role: userRole
+      };
+
+      console.log('Sending request with data:', requestData);
+      
       // Use PUT to update the ticket with a new response
       const response = await axios.put(`${API_URL}/api/tickets/${ticket._id}`, 
-        { message: newResponse, status: ticket.status, role: userRole }, // Send message, current status, and user role
-        { headers: { 'Authorization': `Bearer ${token}` } }
+        requestData,
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
       
-      setCurrentResponses(response.data.responses); // Update responses from the returned ticket
-      setNewResponse('');
-      showAlert('Response sent successfully!', 'success');
-      // Emit WebSocket event for ticket update
-      websocketService.notifyEnterpriseAdmins('ticket_updated', response.data); // Assuming response.data is the updated ticket object
-      websocketService.notifyUser(ticket.submittedBy._id, 'ticket_updated_for_user', response.data);
-      if (onResponseAdded) {
-        onResponseAdded(); // Callback to refresh tickets in parent component
+      if (response.data) {
+        // Update the current responses with the new response
+        const updatedResponses = response.data.responses || [];
+        setCurrentResponses(updatedResponses);
+        setNewResponse('');
+        showAlert('Response sent successfully!', 'success');
+        
+        // Emit WebSocket event for ticket update
+        if (response.data) {
+          try {
+            websocketService.notifyEnterpriseAdmins('ticket_updated', response.data);
+            if (ticket.submittedBy && ticket.submittedBy._id) {
+              websocketService.notifyUser(ticket.submittedBy._id, 'ticket_updated_for_user', response.data);
+            }
+          } catch (wsError) {
+            console.error('WebSocket notification error:', wsError);
+            // Don't show error to user for WebSocket issues
+          }
+        }
+        
+        if (onResponseAdded) {
+          onResponseAdded(); // Callback to refresh tickets in parent component
+        }
       }
     } catch (error) {
-      console.error('Error submitting response:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.message || 'Failed to send response.';
+      console.error('Error submitting response:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        ticketId: ticket._id,
+        userRole: userRole
+      });
+      
+      let errorMessage = 'Failed to send response.';
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        const serverError = error.response.data;
+        errorMessage = serverError?.message || serverError?.error || 'Server error occurred. Please try again.';
+        
+        if (error.response.status === 500) {
+          errorMessage = 'Server error occurred. Please try again later.';
+          console.error('Server error details:', serverError);
+        } else if (error.response.status === 404) {
+          errorMessage = 'Ticket not found. Please refresh the page and try again.';
+        } else if (error.response.status === 403) {
+          errorMessage = 'You do not have permission to respond to this ticket.';
+        } else if (error.response.status === 400) {
+          errorMessage = serverError?.message || 'Invalid request. Please check your input and try again.';
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        errorMessage = 'No response received from server. Please check your connection and try again.';
+        console.error('No response received:', error.request);
+      }
+      
       showAlert(errorMessage, 'error');
     } finally {
       setLoading(false);

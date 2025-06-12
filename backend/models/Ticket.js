@@ -102,6 +102,11 @@ const TicketSchema = new Schema({
       type: String,
       required: true
     },
+    role: {
+      type: String,
+      required: true,
+      enum: ['admin', 'superadmin', 'user']
+    },
     createdAt: {
       type: Date,
       default: Date.now
