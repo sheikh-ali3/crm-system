@@ -157,16 +157,17 @@ router.put('/:id', authenticateToken, authorizeRole('superadmin', 'admin'), asyn
   try {
     const { id } = req.params;
     const { status, message, role } = req.body;
-    const userRole = req.user.role;
+    const userRoleFromToken = req.user.role;
 
-    console.log('Updating ticket:', { 
-      id, 
-      status, 
-      message, 
-      role, 
-      userRole,
-      userId: req.user.id,
-      body: req.body 
+    console.log('Updating ticket: Request received', { 
+      ticketId: id, 
+      statusFromReq: status, 
+      messageFromReq: message, 
+      roleFromReqBody: role, 
+      userRoleFromAuthToken: userRoleFromToken,
+      authenticatedUserId: req.user.id,
+      fullRequestBody: req.body,
+      fullUserObject: req.user
     });
 
     if (!id) {
@@ -202,18 +203,18 @@ router.put('/:id', authenticateToken, authorizeRole('superadmin', 'admin'), asyn
         if (ticket.responses && ticket.responses.length > 0) {
           ticket.responses = ticket.responses.map(response => ({
             ...response.toObject(),
-            role: response.role || userRole // Use existing role or current user's role
+            role: response.role || userRoleFromToken
           }));
         }
 
         const newResponse = {
           message: message.trim(),
-          role: userRole,
+          role: role,
           createdAt: new Date(),
           updatedAt: new Date()
         };
 
-        console.log('Adding new response:', newResponse);
+        console.log('Adding new response object:', newResponse);
         
         // Initialize responses array if it doesn't exist
         if (!ticket.responses) {
