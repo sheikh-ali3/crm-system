@@ -14,7 +14,11 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
 
   useEffect(() => {
     if (isOpen && ticket) {
-      setCurrentResponses(ticket.responses || []);
+      // Sort responses by creation time to show them in chronological order
+      const sortedResponses = [...(ticket.responses || [])].sort((a, b) => 
+        new Date(a.createdAt) - new Date(b.createdAt)
+      );
+      setCurrentResponses(sortedResponses);
     }
   }, [isOpen, ticket]);
 
@@ -69,8 +73,10 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
       );
       
       if (response.data) {
-        // Update the current responses with the new response
-        const updatedResponses = response.data.responses || [];
+        // Sort responses by creation time
+        const updatedResponses = [...(response.data.responses || [])].sort((a, b) => 
+          new Date(a.createdAt) - new Date(b.createdAt)
+        );
         setCurrentResponses(updatedResponses);
         setNewResponse('');
         showAlert('Response sent successfully!', 'success');
@@ -104,8 +110,6 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
       let errorMessage = 'Failed to send response.';
       
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         const serverError = error.response.data;
         errorMessage = serverError?.message || serverError?.error || 'Server error occurred. Please try again.';
         
@@ -120,7 +124,6 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
           errorMessage = serverError?.message || 'Invalid request. Please check your input and try again.';
         }
       } else if (error.request) {
-        // The request was made but no response was received
         errorMessage = 'No response received from server. Please check your connection and try again.';
         console.error('No response received:', error.request);
       }
@@ -135,53 +138,49 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
     <Modal
       isOpen={isOpen}
       onRequestClose={onClose}
-      className="Modal ticket-details-modal"
-      overlayClassName="Overlay"
-      contentLabel="Ticket Details"
+      className="ticket-details-modal"
+      overlayClassName="modal-overlay"
     >
-      {alert.show && (
-        <div className={`alert alert-${alert.type} response-alert`}>
-          {alert.message}
-        </div>
-      )}
       <div className="ticket-details-container">
         <div className="ticket-details-header">
           <h2>Ticket Details</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+          <button className="close-button" onClick={onClose}>&times;</button>
         </div>
+
+        {alert.show && (
+          <div className={`alert alert-${alert.type}`}>
+            {alert.message}
+          </div>
+        )}
 
         <div className="ticket-info">
           <div className="info-group">
-            <label>Subject:</label>
+            <label>Subject</label>
             <p>{ticket?.subject}</p>
           </div>
           <div className="info-group">
-            <label>Status:</label>
-            <p className={`status ${ticket?.status?.toLowerCase()}`}>
-              {ticket?.status}
-            </p>
+            <label>Status</label>
+            <p className={`status ${ticket?.status?.toLowerCase()}`}>{ticket?.status}</p>
           </div>
           <div className="info-group">
-            <label>Created:</label>
-            <p>{new Date(ticket?.createdAt).toLocaleString()}</p>
-          </div>
-          <div className="info-group">
-            <label>Description:</label>
+            <label>Description</label>
             <p>{ticket?.description}</p>
           </div>
         </div>
 
         <div className="responses-section">
-          <h3>Responses</h3>
+          <h3>Conversation</h3>
           <div className="responses-list">
             {currentResponses.length > 0 ? (
               currentResponses.map((response, index) => (
                 <div 
                   key={index} 
-                  className={`response-item ${response.role === userRole ? 'own-response' : 'other-response'}`}
+                  className={`response-item ${response.role === 'superadmin' ? 'superadmin-response' : 'admin-response'}`}
                 >
                   <div className="response-header">
-                    <span className="response-role">{response.role}</span>
+                    <span className="response-role">
+                      {response.role === 'superadmin' ? 'Super Admin' : 'Admin'}
+                    </span>
                     <span className="response-time">
                       {new Date(response.createdAt).toLocaleString()}
                     </span>
@@ -190,7 +189,7 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
                 </div>
               ))
             ) : (
-              <p className="no-responses">No responses yet.</p>
+              <p className="no-responses">No messages yet. Start the conversation!</p>
             )}
           </div>
         </div>
@@ -199,7 +198,7 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
           <textarea
             value={newResponse}
             onChange={(e) => setNewResponse(e.target.value)}
-            placeholder="Type your response..."
+            placeholder={`Type your message as ${userRole === 'superadmin' ? 'Super Admin' : 'Admin'}...`}
             rows="4"
             required
           />
@@ -208,7 +207,7 @@ const TicketDetailsModal = ({ isOpen, onClose, ticket, userRole, onResponseAdded
             className="submit-response-btn"
             disabled={loading}
           >
-            {loading ? 'Sending...' : 'Send Response'}
+            {loading ? 'Sending...' : 'Send Message'}
           </button>
         </form>
       </div>
