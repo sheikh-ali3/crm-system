@@ -20,6 +20,7 @@ router.get('/admin/:id', authenticateToken, authorizeRole('admin'), serviceContr
 // Quotation routes
 router.post('/admin/:serviceId/quotation', authenticateToken, authorizeRole('admin'), serviceController.requestQuotation);
 router.get('/admin/quotations', authenticateToken, authorizeRole('admin'), serviceController.getAdminQuotations);
+router.post('/:serviceId/quotation', authenticateToken, authorizeRole('admin'), serviceController.requestQuotation);
 
 // Service statistics for SuperAdmin
 router.get('/superadmin/stats/summary', authenticateToken, authorizeRole('superadmin'), serviceController.getServiceStats);

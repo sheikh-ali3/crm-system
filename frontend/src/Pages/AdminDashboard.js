@@ -1907,6 +1907,11 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             <h1 className="section-title">Quotations Management</h1>
             <button className="create-btn" onClick={() => {
               resetQuotationForm();
+              setQuotationForm(qf => ({
+                ...qf,
+                enterpriseName: currentUser?.enterprise?.companyName || currentUser?.profile?.companyName || '',
+                email: currentUser?.email || ''
+              }));
               setOpenQuotationDialog(true);
             }}>
               Create New Quotation
@@ -1985,7 +1990,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                           <label>Enterprise Name *</label>
                           <input
                             type="text"
-                            value={currentUser?.enterprise?.companyName || currentUser?.profile?.companyName || ''}
+                            value={quotationForm.enterpriseName}
                             readOnly
                             className="read-only"
                             required
@@ -2004,7 +2009,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                           <label>Email *</label>
                           <input
                             type="email"
-                            value={currentUser?.email || ''}
+                            value={quotationForm.email}
                             readOnly
                             className="read-only"
                             required
