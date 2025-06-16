@@ -415,7 +415,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         setServices([]);
         return;
       }
-      const response = await axios.get(`${API_URL}/services/admin`, {
+      const response = await axios.get(`${API_URL}/api/services/admin`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       console.log('Services data received:', response.data);
