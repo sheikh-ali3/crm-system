@@ -128,7 +128,7 @@ app.use('/products', productAccessRoutes);
 app.use('/superadmin', superAdminRoutes);
 
 // Use Service routes
-app.use('/services', serviceRoutes);
+app.use('/api/services', serviceRoutes);
 
 // Use notification routes
 app.use('/api/notifications', notificationRoutes);

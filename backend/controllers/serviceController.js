@@ -357,41 +357,7 @@ exports.requestQuotation = async (req, res) => {
       // Save quotation to mock DB
       savedQuotation = mockDb.create('quotations', quotationData);
       console.log('Quotation created in mock DB:', savedQuotation._id);
-      
-      // Create notification for superadmins in mock DB
-      try {
-        // Get all superadmins
-        const superadmins = mockDb.find('users', { role: 'superadmin' });
-        
-        if (superadmins && superadmins.length > 0) {
-          // Create notification message
-          const companyName = enterpriseDetails?.companyName || admin?.profile?.companyName || 'An enterprise';
-          const serviceName = service.name || 'a service';
-          const message = `${companyName} has submitted a new quotation request for ${serviceName}`;
-          
-          // Create notification for each superadmin
-          superadmins.forEach(superadmin => {
-            mockDb.create('notifications', {
-              userId: superadmin._id,
-              message,
-              title: 'New Quotation Request',
-              type: 'info',
-              read: false,
-              relatedTo: {
-                model: 'Quotation',
-                id: savedQuotation._id
-              },
-              link: `/superadmin/services?tab=quotations`,
-              createdAt: new Date()
-            });
-          });
-          
-          console.log(`Created notifications for ${superadmins.length} superadmins about new quotation`);
-        }
-      } catch (notificationError) {
-        console.error('Error creating notification for superadmins (mock):', notificationError);
-        // Don't fail the main operation if notification creation fails
-      }
+      return res.status(201).json(savedQuotation);
     } else {
       // Validate service existence
       service = await Service.findById(serviceId);
@@ -421,44 +387,8 @@ exports.requestQuotation = async (req, res) => {
       });
       
       savedQuotation = await newQuotation.save();
-      
-      // Create notification for superadmins
-      try {
-        // Get all superadmins
-        const User = require('../models/User');
-        const superadmins = await User.find({ role: 'superadmin' }, '_id');
-        
-        if (superadmins && superadmins.length > 0) {
-          // Create notification message
-          const companyName = enterpriseDetails?.companyName || req.user.profile?.companyName || 'An enterprise';
-          const serviceName = service.name || 'a service';
-          const message = `${companyName} has submitted a new quotation request for ${serviceName}`;
-          
-          // Create notification for each superadmin
-          const superadminIds = superadmins.map(admin => admin._id);
-          await notificationController.createNotificationForMultipleUsers(superadminIds, {
-            message,
-            title: 'New Quotation Request',
-            type: 'info',
-            relatedTo: {
-              model: 'Quotation',
-              id: savedQuotation._id
-            },
-            link: `/superadmin/services?tab=quotations`
-          });
-          
-          console.log(`Created notifications for ${superadmins.length} superadmins about new quotation`);
-        }
-      } catch (notificationError) {
-        console.error('Error creating notification for superadmins:', notificationError);
-        // Don't fail the main operation if notification creation fails
-      }
+      return res.status(201).json(savedQuotation);
     }
-    
-    res.status(201).json({
-      message: 'Quotation request submitted successfully',
-      quotation: savedQuotation
-    });
   } catch (error) {
     console.error('Error requesting quotation:', error);
     res.status(500).json({ message: 'Failed to request quotation', error: error.message });
