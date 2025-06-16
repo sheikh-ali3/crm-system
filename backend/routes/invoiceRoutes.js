@@ -110,7 +110,7 @@ router.post('/', authenticateToken, isSuperAdmin, async (req, res) => {
       if (item.type === 'service') {
         const service = await Service.findById(item.itemId);
         if (!service) {
-          return res.status(400).json({ message: `Service ${item.name} not found` });
+          return res.status(400).json({ message: `Service not found` });
         }
         // Check if enterprise has access to the service
         const hasAccess = admin.productAccess.some(access => 
@@ -122,7 +122,7 @@ router.post('/', authenticateToken, isSuperAdmin, async (req, res) => {
       } else if (item.type === 'quotation') {
         const quotation = await Quotation.findById(item.itemId);
         if (!quotation) {
-          return res.status(400).json({ message: `Quotation ${item.name} not found` });
+          return res.status(400).json({ message: `Quotation not found` });
         }
         if (quotation.status !== 'approved') {
           return res.status(400).json({ message: `Quotation ${item.name} is not approved` });
@@ -169,6 +169,7 @@ router.post('/', authenticateToken, isSuperAdmin, async (req, res) => {
 
     res.status(201).json(savedInvoice);
   } catch (error) {
+    console.error('Error creating invoice:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

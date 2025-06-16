@@ -519,19 +519,19 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         // Transform the API response to match the expected format
         const formattedProducts = response.data.map(product => {
           // Determine if this product is purchased based on user permissions
-          let isPurchased = false;
+          let hasAccess = false;
           
           // Map product IDs to permission keys
           if (product.productId === 'crm-pro' || product.productId === 'PROD-CRM-001') {
-            isPurchased = userPermissions.crmAccess;
+            hasAccess = userPermissions.crmAccess;
           } else if (product.productId === 'hrms-basic' || product.productId === 'PROD-HRMS-001') {
-            isPurchased = userPermissions.hrmsAccess;
+            hasAccess = userPermissions.hrmsAccess;
           } else if (product.productId === 'job-portal' || product.productId === 'PROD-JP-001') {
-            isPurchased = userPermissions.jobPortalAccess;
+            hasAccess = userPermissions.jobPortalAccess;
           } else if (product.productId === 'job-board' || product.productId === 'PROD-JB-001') {
-            isPurchased = userPermissions.jobBoardAccess;
+            hasAccess = userPermissions.jobBoardAccess;
           } else if (product.productId === 'project-management' || product.productId === 'PROD-PM-001') {
-            isPurchased = userPermissions.projectManagementAccess;
+            hasAccess = userPermissions.projectManagementAccess;
           }
           
           return {
@@ -540,9 +540,10 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             description: product.description,
             icon: product.icon || '📋',
             productId: product.productId,
-            purchased: isPurchased,
-            startDate: isPurchased ? new Date().toLocaleDateString() : null,
-            endDate: isPurchased ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null
+            purchased: hasAccess,
+            startDate: hasAccess ? new Date().toLocaleDateString() : null,
+            endDate: hasAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
+            hasAccess: hasAccess
           };
         });
         
@@ -561,7 +562,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             purchased: userPermissions.crmAccess,
             startDate: userPermissions.crmAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.crmAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-CRM-001'
+            productId: 'PROD-CRM-001',
+            hasAccess: userPermissions.crmAccess
           },
           { 
             id: 'hrms-basic', 
@@ -571,7 +573,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             purchased: userPermissions.hrmsAccess,
             startDate: userPermissions.hrmsAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.hrmsAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-HRMS-001'
+            productId: 'PROD-HRMS-001',
+            hasAccess: userPermissions.hrmsAccess
           },
           { 
             id: 'job-portal', 
@@ -581,7 +584,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             purchased: userPermissions.jobPortalAccess,
             startDate: userPermissions.jobPortalAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.jobPortalAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-JP-001'
+            productId: 'PROD-JP-001',
+            hasAccess: userPermissions.jobPortalAccess
           },
           {
             id: 'job-board',
@@ -591,7 +595,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             purchased: userPermissions.jobBoardAccess,
             startDate: userPermissions.jobBoardAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.jobBoardAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-JB-001'
+            productId: 'PROD-JB-001',
+            hasAccess: userPermissions.jobBoardAccess
           },
           {
             id: 'project-management',
@@ -601,7 +606,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             purchased: userPermissions.projectManagementAccess,
             startDate: userPermissions.projectManagementAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.projectManagementAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-PM-001'
+            productId: 'PROD-PM-001',
+            hasAccess: userPermissions.projectManagementAccess
           }
         ];
         
@@ -620,7 +626,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           purchased: userPermissions.crmAccess,
           startDate: userPermissions.crmAccess ? new Date().toLocaleDateString() : null,
           endDate: userPermissions.crmAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-CRM-001'
+          productId: 'PROD-CRM-001',
+          hasAccess: userPermissions.crmAccess
         },
         { 
           id: 'hrms-basic', 
@@ -630,7 +637,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           purchased: userPermissions.hrmsAccess,
           startDate: userPermissions.hrmsAccess ? new Date().toLocaleDateString() : null,
           endDate: userPermissions.hrmsAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-HRMS-001'
+          productId: 'PROD-HRMS-001',
+          hasAccess: userPermissions.hrmsAccess
         },
         { 
           id: 'job-portal', 
@@ -640,7 +648,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           purchased: userPermissions.jobPortalAccess,
           startDate: userPermissions.jobPortalAccess ? new Date().toLocaleDateString() : null,
           endDate: userPermissions.jobPortalAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-JP-001'
+          productId: 'PROD-JP-001',
+          hasAccess: userPermissions.jobPortalAccess
         },
         {
           id: 'job-board',
@@ -650,7 +659,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           purchased: userPermissions.jobBoardAccess,
           startDate: userPermissions.jobBoardAccess ? new Date().toLocaleDateString() : null,
           endDate: userPermissions.jobBoardAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-JB-001'
+          productId: 'PROD-JB-001',
+          hasAccess: userPermissions.jobBoardAccess
         },
         {
           id: 'project-management',
@@ -660,7 +670,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           purchased: userPermissions.projectManagementAccess,
           startDate: userPermissions.projectManagementAccess ? new Date().toLocaleDateString() : null,
           endDate: userPermissions.projectManagementAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-PM-001'
+          productId: 'PROD-PM-001',
+          hasAccess: userPermissions.projectManagementAccess
         }
       ];
       
@@ -1291,8 +1302,12 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                               Open
                             </button>
                           ) : (
-                            <button className="request-btn" onClick={() => handleRequestProduct(product)}>
-                              Add Product
+                            <button 
+                              className={product.hasAccess ? "added-btn" : "request-btn"} 
+                              onClick={product.hasAccess ? undefined : () => handleRequestProduct(product)}
+                              disabled={product.hasAccess}
+                            >
+                              {product.hasAccess ? "Added" : "Add Product"}
                             </button>
                           )}
                         </td>
@@ -2366,9 +2381,9 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       // Prepare data for submission
       const requestData = {
         ...productRequestForm,
-        productId: selectedProductToRequest.id,
+        productId: selectedProductToRequest.productId,
         productName: selectedProductToRequest.name,
-        enterpriseId: currentUser?.id,
+        enterpriseId: currentUser?._id,
         enterpriseName: currentUser?.profile?.companyName || enterpriseInfo.name,
         requestDate: new Date().toISOString()
       };

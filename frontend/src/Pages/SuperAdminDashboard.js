@@ -60,13 +60,7 @@ const SuperAdminDashboard = () => {
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [crmOverview, setCrmOverview] = useState([]);
   const [newProduct, setNewProduct] = useState({ id: '', name: '', description: '', icon: '📋' });
-  const [products, setProducts] = useState([
-    { id: 'crm', name: 'CRM System', description: 'Customer Relationship Management', icon: '📊', category: 'crm' },
-    { id: 'hrm', name: 'HR Management', description: 'Human Resource Management', icon: '👥', category: 'hrm' },
-    { id: 'job-portal', name: 'Job Portal', description: 'Internal job management system', icon: '🧑‍💼', category: 'job-portal' },
-    { id: 'job-board', name: 'Job Board', description: 'Public job listing platform', icon: '📋', category: 'job-board' },
-    { id: 'project-management', name: 'Project Management', description: 'Manage projects and tasks', icon: '📝', category: 'project-management' }
-  ]);
+  const [products, setProducts] = useState([]);
   const [loadingProduct, setLoadingProduct] = useState(null);
   const [openProductEditDialog, setOpenProductEditDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -121,14 +115,12 @@ const SuperAdminDashboard = () => {
     },
     items: [],
     totalAmount: 0,
+    discount: 0,
     status: 'pending',
     issueDate: new Date(),
     dueDate: '',
     notes: '',
-    billingPeriod: {
-      start: '',
-      end: ''
-    }
+    billingPeriod: 'one time' // Set default value
   });
 
   // Add enterpriseForm state
@@ -681,18 +673,27 @@ const SuperAdminDashboard = () => {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const endpoint = `/superadmin/admins/${adminId}/products/${productId}/${grantAccess ? 'grant' : 'revoke'}`;
       
-      const response = await axios.post(
+      const response = await axios.put(
         `${apiUrl}${endpoint}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      showAlert(`Access to ${productName} has been ${actionText} successfully`, 'success');
+      const productAccess = response.data.admin.productAccess.find(p => p.productId === productId);
+      const accessUrl = productAccess?.accessUrl;
+      let message = `Access to ${productName} has been ${actionText} successfully.`;
+      if (grantAccess && accessUrl) {
+        message += `\nAccess URL: ${accessUrl}`;
+      }
+      showAlert(message, 'success');
       
       // Update the local state with the updated admin data
       setAdmins(prevAdmins => prevAdmins.map(admin => 
         admin._id === adminId ? { ...admin, productAccess: response.data.admin.productAccess } : admin
       ));
+      
+      // If the selectedAdmin is the one we just updated, update its productAccess too
+      setSelectedAdmin(prev => prev && prev._id === adminId ? { ...prev, productAccess: response.data.admin.productAccess, permissions: response.data.admin.permissions } : prev);
       
       // Update permissions based on product
       if (productId === 'crm') {
@@ -878,13 +879,6 @@ const SuperAdminDashboard = () => {
   const renderEnterpriseAccess = () => {
     if (!selectedAdmin) return null;
 
-    // Define available products
-    const products = [
-      { id: 'crm', name: 'CRM System', icon: 'fa-users' },
-      { id: 'ticketing', name: 'Ticketing System', icon: 'fa-ticket-alt' },
-      { id: 'inventory', name: 'Inventory Management', icon: 'fa-boxes' }
-    ];
-
     // Helper functions
     const hasProductAccess = (productId) => {
       if (!selectedAdmin.productAccess) return false;
@@ -921,7 +915,7 @@ const SuperAdminDashboard = () => {
           <div key={product.id} className="product-access-card">
             <div className="product-access-header">
               <div className="product-icon">
-                <i className={`fas ${product.icon}`}></i>
+                {product.icon}
               </div>
               <div className="product-details">
                 <h4>{product.name}</h4>
@@ -934,46 +928,26 @@ const SuperAdminDashboard = () => {
             <div className="product-access-actions">
               {hasProductAccess(product.id) ? (
                 <>
-                  {getAccessUrl(product.id) && (
-                    <div className="access-url-container">
-                      <div className="access-url">
-                        {getAccessUrl(product.id)}
-                      </div>
-                      <button 
-                        className="btn btn-icon"
-                        onClick={() => handleCopyUrl(getAccessUrl(product.id))}
-                        title="Copy URL"
-                      >
-                        <i className="fas fa-copy"></i>
-                      </button>
-                    </div>
-                  )}
-                  
-                  <div className="action-buttons">
-                    <button
-                      className="btn btn-warning"
-                      onClick={() => handleToggleProductAccess(selectedAdmin._id, product.id, false)}
-                      disabled={isProductLoading(product.id)}
-                    >
-                      {isProductLoading(product.id) ? (
-                        <i className="fas fa-spinner fa-spin"></i>
-                      ) : (
-                        <>Revoke Access</>
-                      )}
-                    </button>
-                    
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => handleRegenerateAccessLink(selectedAdmin._id, product.id)}
-                      disabled={isProductLoading(product.id)}
-                    >
-                      {isProductLoading(product.id) ? (
-                        <i className="fas fa-spinner fa-spin"></i>
-                      ) : (
-                        <>Regenerate Link</>
-                      )}
-                    </button>
+                  <div className="access-link-url">
+                    <span className="subdomain-highlight">{getAccessUrl(product.id)}</span>
                   </div>
+                  <button 
+                    className="copy-link-btn"
+                    onClick={() => handleCopyUrl(getAccessUrl(product.id))}
+                  >
+                    <i className="fas fa-copy"></i> Copy Access Link
+                  </button>
+                  <button 
+                    className="btn btn-warning"
+                    onClick={() => handleToggleProductAccess(selectedAdmin._id, product.id, false)}
+                    disabled={isProductLoading(product.id)}
+                  >
+                    {isProductLoading(product.id) ? (
+                      <i className="fas fa-spinner fa-spin"></i>
+                    ) : (
+                      'Revoke Access'
+                    )}
+                  </button>
                 </>
               ) : (
                 <button
@@ -984,7 +958,7 @@ const SuperAdminDashboard = () => {
                   {isProductLoading(product.id) ? (
                     <i className="fas fa-spinner fa-spin"></i>
                   ) : (
-                    <>Grant Access</>
+                    'Grant Access'
                   )}
                 </button>
               )}
@@ -1078,7 +1052,7 @@ const SuperAdminDashboard = () => {
     });
     setPermissions(admin.permissions || { crmAccess: false });
     setProductAccess(admin.productAccess || []);
-    setOpenDialog(true);
+    setShowEnterpriseForm(true);
   };
 
   const resetProductForm = () => {
@@ -1977,10 +1951,7 @@ const SuperAdminDashboard = () => {
       issueDate: new Date(),
       dueDate: '',
       notes: '',
-      billingPeriod: {
-        start: '',
-        end: ''
-      }
+      billingPeriod: 'one time' // Set default value
     });
     setSelectedInvoice(null);
   };
@@ -2057,6 +2028,22 @@ const SuperAdminDashboard = () => {
     });
   };
 
+  // Add discount change handler
+  const handleDiscountChange = (value) => {
+    setInvoiceForm(prev => {
+      const discount = parseFloat(value) || 0;
+      const amount = prev.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+      const discountAmount = (amount * discount) / 100;
+      const totalAmount = amount - discountAmount;
+      
+      return {
+        ...prev,
+        discount,
+        totalAmount
+      };
+    });
+  };
+
   // Handle create/update invoice
   const handleSubmitInvoice = async (e) => {
     e.preventDefault();
@@ -2085,10 +2072,19 @@ const SuperAdminDashboard = () => {
         showAlert('Please select a due date', 'error');
         return;
       }
+
+      // Validate each item
+      for (const item of invoiceForm.items) {
+        if (!item.itemId || !item.name || !item.quantity || !item.unitPrice) {
+          showAlert('Please fill in all required fields for each item', 'error');
+          return;
+        }
+      }
       
       // Calculate final amounts
       const amount = invoiceForm.items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-      const totalAmount = amount + (amount * (invoiceForm.tax || 0) / 100);
+      const discountAmount = (amount * (invoiceForm.discount || 0)) / 100;
+      const totalAmount = amount - discountAmount;
       
       // Format the invoice data according to the expected structure
       const invoiceData = {
@@ -2107,12 +2103,13 @@ const SuperAdminDashboard = () => {
           totalPrice: Number(item.totalPrice)
         })),
         amount: Number(amount),
+        discount: Number(invoiceForm.discount || 0),
         totalAmount: Number(totalAmount),
         status: 'pending',
         issueDate: new Date().toISOString(),
         dueDate: new Date(invoiceForm.dueDate).toISOString(),
         notes: invoiceForm.notes || '',
-        billingPeriod: invoiceForm.billingPeriod || ''
+        billingPeriod: invoiceForm.billingPeriod || 'one time'
       };
 
       console.log('Submitting invoice data:', JSON.stringify(invoiceData, null, 2));
@@ -2177,36 +2174,24 @@ const SuperAdminDashboard = () => {
   };
 
   // Add function to fetch enterprise services and quotations
-  const fetchEnterpriseData = async (enterpriseId) => {
+  const fetchEnterpriseData = async (adminId) => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      
+
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       
-      // Find the admin/enterprise to get their product access
-      const admin = admins.find(a => a._id === enterpriseId);
-      if (!admin) {
-        showAlert('Enterprise not found', 'error');
-        return;
-      }
-
-      // Get products that the enterprise has access to
-      const accessibleProducts = products.filter(product => {
-        if (product.id === 'crm') {
-          return admin.permissions?.crmAccess;
-        } else {
-          return admin.productAccess?.some(p => p.productId === product.id && p.hasAccess);
-        }
-      });
-
-      setEnterpriseServices(accessibleProducts);
-      
-      // Fetch approved quotations
-      const quotationsResponse = await axios.get(`${apiUrl}/api/invoices/enterprises/${enterpriseId}/quotations`, {
+      // Fetch services
+      const servicesResponse = await axios.get(`${apiUrl}/api/services`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setEnterpriseQuotations(quotationsResponse.data.filter(q => q.status === 'approved'));
+      setEnterpriseServices(servicesResponse.data);
+
+      // Fetch quotations for the selected enterprise
+      const quotationsResponse = await axios.get(`${apiUrl}/api/quotations/admin/${adminId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setEnterpriseQuotations(quotationsResponse.data);
     } catch (error) {
       console.error('Error fetching enterprise data:', error);
       showAlert('Failed to fetch enterprise data', 'error');
@@ -2214,18 +2199,21 @@ const SuperAdminDashboard = () => {
   };
 
   // Update enterprise selection handler
-  const handleEnterpriseChange = async (e) => {
-    const selectedAdmin = admins.find(admin => admin._id === e.target.value);
-    if (selectedAdmin) {
-      setInvoiceForm({
-        ...invoiceForm,
-        adminId: e.target.value,
-        enterpriseDetails: {
-          companyName: selectedAdmin.enterprise?.companyName || selectedAdmin.profile?.fullName || '',
-          email: selectedAdmin.email || ''
-        }
-      });
-      await fetchEnterpriseData(e.target.value);
+  const handleEnterpriseChange = (e) => {
+    const adminId = e.target.value;
+    const selectedAdmin = admins.find(admin => admin._id === adminId);
+    
+    setInvoiceForm(prev => ({
+      ...prev,
+      adminId,
+      enterpriseDetails: {
+        companyName: selectedAdmin?.enterprise?.companyName || '',
+        email: selectedAdmin?.email || ''
+      }
+    }));
+    
+    if (adminId) {
+      fetchEnterpriseData(adminId);
     }
   };
 
@@ -2250,6 +2238,28 @@ const SuperAdminDashboard = () => {
     });
   };
 
+  // Add unit price change handler
+  const handleUnitPriceChange = (index, value) => {
+    setInvoiceForm(prev => {
+      const updatedItems = [...prev.items];
+      const item = updatedItems[index];
+      
+      item.unitPrice = parseFloat(value) || 0;
+      item.totalPrice = item.quantity * item.unitPrice;
+      
+      // Recalculate invoice totals
+      const amount = updatedItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+      const totalAmount = amount + (amount * (prev.tax || 0) / 100);
+      
+      return {
+        ...prev,
+        items: updatedItems,
+        amount,
+        totalAmount
+      };
+    });
+  };
+
   // Update item name change handler
   const handleItemNameChange = (index, name, itemId) => {
     setInvoiceForm(prev => {
@@ -2257,26 +2267,29 @@ const SuperAdminDashboard = () => {
       const item = updatedItems[index];
       
       if (item.type === 'service') {
-        const product = enterpriseServices.find(p => p.id === itemId);
-        if (product) {
-          item.unitPrice = product.pricing?.price || 0;
-          item.description = product.description || '';
+        const service = enterpriseServices.find(s => s._id === itemId);
+        if (service) {
+          item.unitPrice = service.price || 0;
+          item.description = service.description || '';
+          item.name = service.name;
+          item.itemId = service._id;
         }
       } else if (item.type === 'quotation') {
         const quotation = enterpriseQuotations.find(q => q._id === itemId);
         if (quotation) {
           item.unitPrice = quotation.finalPrice || 0;
           item.description = quotation.requestDetails || '';
+          item.name = quotation.service?.name || name;
+          item.itemId = quotation._id;
         }
       }
       
-      item.name = name;
-      item.itemId = itemId;
       item.totalPrice = item.quantity * item.unitPrice;
       
       // Recalculate invoice totals
       const amount = updatedItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-      const totalAmount = amount + (amount * (prev.tax || 0) / 100);
+      const discountAmount = (amount * (prev.discount || 0)) / 100;
+      const totalAmount = amount - discountAmount;
       
       return {
         ...prev,
@@ -3176,6 +3189,18 @@ const SuperAdminDashboard = () => {
                       className="read-only"
                   />
                 </div>
+                <div className="form-group">
+                  <label>Discount (%)</label>
+                  <input 
+                    type="number" 
+                    value={invoiceForm.discount} 
+                    onChange={(e) => handleDiscountChange(e.target.value)}
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    placeholder="Enter discount percentage"
+                  />
+                </div>
                 </div>
                 
                 <div className="form-row">
@@ -3193,13 +3218,19 @@ const SuperAdminDashboard = () => {
                   
                   <div className="form-group">
                     <label>Billing Period</label>
-                    <input 
-                      type="text" 
-                      value={invoiceForm.billingPeriod} 
+                    <select
+                      value={invoiceForm.billingPeriod}
                       onChange={(e) => setInvoiceForm({...invoiceForm, billingPeriod: e.target.value})}
-                      placeholder="e.g. January 2023"
-                    />
-              </div>
+                      className="form-select"
+                    >
+                      <option value="one time">One Time</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="fortnight">Fortnight</option>
+                      <option value="yearly">Yearly</option>
+                      <option value="6 months">6 Months</option>
+                      <option value="3 months">3 Months</option>
+                    </select>
+                  </div>
                 </div>
                 
                 <div className="form-group">
@@ -3806,11 +3837,14 @@ const SuperAdminDashboard = () => {
                       
                       <div className="form-group">
                         <label>Unit Price ($) <span className="required">*</span></label>
-                        <input 
-                          type="number" 
-                          value={item.unitPrice} 
-                          readOnly
-                          className="read-only"
+                        <input
+                          type="number"
+                          value={item.unitPrice}
+                          onChange={(e) => handleUnitPriceChange(index, e.target.value)}
+                          readOnly={item.type !== 'service'}
+                          className={item.type !== 'service' ? 'read-only' : ''}
+                          min="0"
+                          step="0.01"
                         />
                       </div>
                       
@@ -3854,6 +3888,18 @@ const SuperAdminDashboard = () => {
                       className="read-only"
                     />
                   </div>
+                  <div className="form-group">
+                    <label>Discount (%)</label>
+                    <input 
+                      type="number" 
+                      value={invoiceForm.discount} 
+                      onChange={(e) => handleDiscountChange(e.target.value)}
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="Enter discount percentage"
+                    />
+                  </div>
                 </div>
                 
                 <div className="form-row">
@@ -3871,12 +3917,18 @@ const SuperAdminDashboard = () => {
                   
                   <div className="form-group">
                     <label>Billing Period</label>
-                    <input 
-                      type="text" 
-                      value={invoiceForm.billingPeriod} 
+                    <select
+                      value={invoiceForm.billingPeriod}
                       onChange={(e) => setInvoiceForm({...invoiceForm, billingPeriod: e.target.value})}
-                      placeholder="e.g. January 2023"
-                    />
+                      className="form-select"
+                    >
+                      <option value="one time">One Time</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="fortnight">Fortnight</option>
+                      <option value="yearly">Yearly</option>
+                      <option value="6 months">6 Months</option>
+                      <option value="3 months">3 Months</option>
+                    </select>
                   </div>
                 </div>
                 

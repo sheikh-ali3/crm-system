@@ -60,6 +60,12 @@ const invoiceSchema = new mongoose.Schema({
     required: true,
     min: 0
   },
+  discount: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 0
+  },
   status: {
     type: String,
     enum: ['draft', 'pending', 'paid', 'overdue', 'cancelled'],
@@ -81,7 +87,9 @@ const invoiceSchema = new mongoose.Schema({
     type: String
   },
   billingPeriod: {
-    type: String
+    type: String,
+    enum: ['one time', 'monthly', 'fortnight', 'yearly', '6 months', '3 months'],
+    default: 'one time'
   }
 }, { timestamps: true });
 

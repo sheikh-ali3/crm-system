@@ -21,6 +21,9 @@ const productRoutes = require('./routes/productRoutes');
 // Import product access routes
 const productAccessRoutes = require('./routes/productAccessRoutes');
 
+// Import product request routes
+const productRequestRoutes = require('./routes/productRequestRoutes');
+
 // Import SuperAdmin routes
 const superAdminRoutes = require('./routes/superAdminRoutes');
 
@@ -123,6 +126,9 @@ app.use('/api', productRoutes);
 
 // Use product access routes
 app.use('/products', productAccessRoutes);
+
+// Use product request routes
+app.use('/api/product-requests', productRequestRoutes);
 
 // Use SuperAdmin routes
 app.use('/superadmin', superAdminRoutes);
