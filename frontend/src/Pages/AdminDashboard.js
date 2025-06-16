@@ -426,12 +426,18 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       }
     } catch (error) {
       console.error('Error in fetchServices:', error);
-      showAlert('Failed to fetch services: ' + (error.response?.data?.message || error.message), 'error');
-      setServices([]);
+      // If 403 error, use sample data fallback
+      if (error.response && error.response.status === 403) {
+        showAlert('Showing sample services (admin access required for real data)', 'warning');
+        setServices(getSampleServices());
+      } else {
+        showAlert('Failed to fetch services: ' + (error.response?.data?.message || error.message), 'error');
+        setServices([]);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [navigate, showAlert]);
+  }, [navigate, showAlert, getSampleServices]);
 
   // Fetch quotations (admin-specific)
   const fetchQuotations = useCallback(async () => {
@@ -485,8 +491,16 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
 
   // Handle service quotation click
   const handleServiceQuotationClick = (service) => {
-    console.log('Service quotation requested for:', service);
-    showAlert('Quotation feature will be available soon!', 'info');
+    setSelectedService(service);
+    setQuotationForm({
+      service: service.name,
+      enterpriseName: currentUser?.enterprise?.companyName || '',
+      email: currentUser?.email || '',
+      contactNumber: '',
+      description: '',
+      budget: ''
+    });
+    setOpenQuotationDialog(true);
   };
 
   // Handle view quotation
@@ -1287,27 +1301,21 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                         <td className="product-description">{product.description}</td>
                         <td className="product-id">{product.productId}</td>
                         <td className="product-status">
-                          <span className={`status-badge ${product.purchased ? 'active' : 'inactive'}`}>
-                            {product.purchased ? 'Active' : 'Not Purchased'}
+                          <span className={`status-badge ${product.hasAccess ? 'active' : 'inactive'}`}> 
+                            {product.hasAccess ? 'Purchased' : 'Not Purchased'}
                           </span>
                         </td>
                         <td className="product-date">{product.startDate || '-'}</td>
                         <td className="product-date">{product.endDate || '-'}</td>
                         <td className="product-action">
-                          {product.purchased ? (
-                            <button 
-                              className="view-btn"
-                              onClick={() => handleViewProduct(product)}
-                            >
-                              Open
-                            </button>
+                          {product.hasAccess ? (
+                            <span className="added-tag">Added</span>
                           ) : (
                             <button 
-                              className={product.hasAccess ? "added-btn" : "request-btn"} 
-                              onClick={product.hasAccess ? undefined : () => handleRequestProduct(product)}
-                              disabled={product.hasAccess}
+                              className="request-btn" 
+                              onClick={() => handleRequestProduct(product)}
                             >
-                              {product.hasAccess ? "Added" : "Add Product"}
+                              Add Product
                             </button>
                           )}
                         </td>
@@ -3091,6 +3099,67 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     setShowProductDetails(true);
   };
 
+  // Add a submit handler for the quotation form
+  const handleSubmitQuotationRequest = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showAlert('Authentication token not found', 'error');
+        return;
+      }
+      if (!selectedService || !quotationForm.enterpriseName || !quotationForm.budget) {
+        showAlert('Please fill in all required fields', 'error');
+        return;
+      }
+      const quotationData = {
+        serviceId: selectedService._id,
+        requestDetails: quotationForm.description,
+        requestedPrice: Number(quotationForm.budget),
+        enterpriseDetails: {
+          companyName: quotationForm.enterpriseName,
+          contactPerson: currentUser?.profile?.fullName || '',
+          email: quotationForm.email,
+          phone: quotationForm.contactNumber
+        }
+      };
+      const response = await axios.post(
+        `${API_URL}/api/services/${selectedService._id}/quotation`,
+        quotationData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      if (response.data && response.data._id) {
+        showAlert('Quotation submitted successfully!', 'success');
+        setOpenQuotationDialog(false);
+        setSelectedService(null);
+        setQuotationForm({
+          service: '',
+          enterpriseName: currentUser?.enterprise?.companyName || '',
+          email: currentUser?.email || '',
+          contactNumber: '',
+          description: '',
+          budget: ''
+        });
+        fetchQuotations();
+      } else {
+        throw new Error('No response data received');
+      }
+    } catch (error) {
+      if (error.response) {
+        showAlert(error.response.data.message || 'Failed to create quotation', 'error');
+      } else if (error.request) {
+        showAlert('No response from server. Please try again.', 'error');
+      } else {
+        showAlert('Failed to create quotation: ' + error.message, 'error');
+      }
+    }
+  };
+
   return (
     <div className="admin-dashboard">
       <div className="dashboard-frame">
@@ -3407,6 +3476,63 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           ticket={selectedTicket}
           userRole="admin" // Explicitly set role for admin dashboard
         />
+      )}
+
+      {/* Quotation Form Dialog */}
+      {openQuotationDialog && selectedService && (
+        <div className="dialog-overlay">
+          <div className="dialog">
+            <h2>Request Quotation</h2>
+            <form onSubmit={handleSubmitQuotationRequest}>
+              <div className="form-group">
+                <label>Service</label>
+                <input type="text" value={selectedService.name} readOnly className="read-only" />
+              </div>
+              <div className="form-group">
+                <label>Enterprise Name</label>
+                <input type="text" value={quotationForm.enterpriseName} readOnly className="read-only" />
+              </div>
+              <div className="form-group">
+                <label>Email</label>
+                <input type="email" value={quotationForm.email} readOnly className="read-only" />
+              </div>
+              <div className="form-group">
+                <label>Contact Number</label>
+                <input
+                  type="text"
+                  value={quotationForm.contactNumber}
+                  onChange={e => setQuotationForm({ ...quotationForm, contactNumber: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  value={quotationForm.description}
+                  onChange={e => setQuotationForm({ ...quotationForm, description: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Budget</label>
+                <input
+                  type="number"
+                  value={quotationForm.budget}
+                  onChange={e => setQuotationForm({ ...quotationForm, budget: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-actions">
+                <button type="button" className="btn-secondary" onClick={() => setOpenQuotationDialog(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary">
+                  Submit
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
