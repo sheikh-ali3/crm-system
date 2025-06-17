@@ -61,10 +61,14 @@ const ComplaintsManagement = () => {
       await axios.post(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/tickets`,
         {
+          name: currentUser?.profile?.fullName || 'Unknown',
+          email: currentUser?.email || 'unknown@example.com',
           subject: ticketForm.subject,
-          category: ticketForm.category,
-          description: ticketForm.description,
+          department: ticketForm.department || 'General',
+          relatedTo: ticketForm.relatedTo || 'General',
+          message: ticketForm.description,
           priority: ticketForm.priority,
+          category: ticketForm.category,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -122,13 +126,16 @@ const ComplaintsManagement = () => {
       const token = localStorage.getItem('token');
       console.log('Fetching tickets with token:', token ? 'Present' : 'Missing');
       setLoading(true);
-      
       const response = await axios.get(
         `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api/tickets`, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log('Tickets API response:', response.data);
-      setTickets(response.data);
+      // Deduplicate tickets by _id
+      const uniqueTickets = response.data.filter(
+        (ticket, index, self) => index === self.findIndex(t => t._id === ticket._id)
+      );
+      setTickets(uniqueTickets);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching tickets:', error.response?.data || error.message);

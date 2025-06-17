@@ -135,7 +135,7 @@ router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res)
 });
 
 // Get tickets for specific admin
-router.get('/admin', authenticateToken, authorizeRole('admin'), async (req, res) => {
+router.get('/admin', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     console.log('GET /api/tickets/admin called by user:', req.user);
     const tickets = await Ticket.find({ adminId: req.user.id })
