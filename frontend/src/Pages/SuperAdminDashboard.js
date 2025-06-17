@@ -568,9 +568,9 @@ const SuperAdminDashboard = () => {
 
   const handleCreateEnterprise = async (e) => {
     e.preventDefault();
-    
+
     // Validate required fields
-    if (!enterpriseForm.email || !enterpriseForm.password || !enterpriseForm.companyName) {
+    if (!email || !password || !enterprise.companyName) {
       showAlert('Please fill in all required fields', 'error');
       return;
     }
@@ -584,25 +584,36 @@ const SuperAdminDashboard = () => {
 
       // Prepare the data according to backend expectations
       const enterpriseData = {
-        email: enterpriseForm.email,
-        password: enterpriseForm.password,
+        email,
+        password,
         profile: {
-          fullName: enterpriseForm.fullName || '',
-          phone: enterpriseForm.phone || '',
+          fullName: profile.fullName || '',
+          phone: profile.phone || '',
+          department: profile.department || '',
+          joinDate: profile.joinDate || '',
           status: 'active'
         },
         permissions: {
-          crmAccess: true // Default to true for new enterprises
+          ...permissions
         },
+        productAccess: productAccess,
         enterprise: {
-          companyName: enterpriseForm.companyName,
-          industry: enterpriseForm.industry || '',
-          size: enterpriseForm.size || '',
-          location: enterpriseForm.location || ''
+          enterpriseId: enterprise.enterpriseId || '',
+          companyName: enterprise.companyName,
+          logo: enterprise.logo || '',
+          address: enterprise.address || '',
+          mailingAddress: enterprise.mailingAddress || '',
+          city: enterprise.city || '',
+          country: enterprise.country || '',
+          zipCode: enterprise.zipCode || '',
+          phoneNumber: enterprise.phoneNumber || '',
+          companyEmail: enterprise.companyEmail || '',
+          loginLink: enterprise.loginLink || '',
+          industry: enterprise.industry || '',
+          businessType: enterprise.businessType || '',
+          size: enterprise.size || ''
         }
       };
-
-      console.log('Creating enterprise with data:', enterpriseData);
 
       const response = await axios.post(
         `${process.env.REACT_APP_API_URL}/superadmin/create-admin`,
@@ -617,32 +628,26 @@ const SuperAdminDashboard = () => {
 
       if (response.data) {
         showAlert('Enterprise created successfully', 'success');
-        setEnterpriseForm({
-          email: '',
-          password: '',
-          fullName: '',
-          phone: '',
-          companyName: '',
-          industry: '',
-          size: '',
-          location: ''
+        // Reset all form states
+        setEmail('');
+        setPassword('');
+        setProfile({ fullName: '', phone: '', department: '', status: 'active', joinDate: '' });
+        setEnterprise({
+          enterpriseId: '', companyName: '', logo: '', address: '', mailingAddress: '', city: '', country: '', zipCode: '', phoneNumber: '', companyEmail: '', loginLink: '', industry: '', businessType: '', size: ''
         });
-        setShowEnterpriseModal(false);
+        setPermissions({ crmAccess: false });
+        setProductAccess([]);
+        setShowEnterpriseForm(false);
         fetchEnterprises(); // Refresh the list
       }
     } catch (error) {
       console.error('Error creating enterprise:', error);
       let errorMessage = 'Failed to create enterprise';
-      
       if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
         errorMessage = error.response.data.message || errorMessage;
       } else if (error.request) {
-        // The request was made but no response was received
         errorMessage = 'No response from server';
       }
-      
       showAlert(errorMessage, 'error');
     }
   };
@@ -1678,7 +1683,9 @@ const SuperAdminDashboard = () => {
       const updateData = {
         email: email,
         profile: profile,
-        enterprise: enterprise
+        enterprise: enterprise,
+        permissions: { ...permissions },
+        productAccess: productAccess
       };
       
       // Only include password if it was provided
@@ -2531,7 +2538,7 @@ const SuperAdminDashboard = () => {
           {activeTab === 'enterprise' && (
             <div className="enterprises-section">
               <h2>Enterprise Management</h2>
-              <button className="create-btn" onClick={() => setOpenDialog(true)}>
+              <button className="create-btn" onClick={() => setShowEnterpriseForm(true)}>
                 Create New Enterprise
               </button>
               
@@ -4142,6 +4149,17 @@ const SuperAdminDashboard = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {showEnterpriseForm && (
+        <div className="modal-backdrop">
+          <div className="modal-content">
+            {renderForm(
+              editingEnterprise ? handleUpdateEnterprise : handleCreateEnterprise,
+              editingEnterprise ? 'Update Enterprise' : 'Create Enterprise',
+              editingEnterprise ? 'Update' : 'Create'
+            )}
           </div>
         </div>
       )}
