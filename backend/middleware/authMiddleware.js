@@ -27,34 +27,6 @@ const authenticateToken = async (req, res, next) => {
     // Add user info to request
     req.user = decoded;
     
-    // Check if we're using mock database
-    if (process.env.USE_MOCK_DB === 'true') {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Using mock DB for user authentication');
-      }
-      
-      // For mock DB, we can skip further checks in development mode
-      if (process.env.NODE_ENV === 'development') {
-        // In development, we'll consider the token valid if it can be decoded
-        return next();
-      }
-      
-      // For mock DB, verify the user exists in mock data
-      const mockDb = require('../utils/mockDb');
-      const mockUser = mockDb.findOne('users', { _id: decoded.id });
-      
-      if (!mockUser) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('User not found in mock DB:', decoded.id);
-        }
-        return res.status(401).json({ message: 'User not found in mock database. Please log in again.' });
-      }
-      
-      // Add additional user data that might be needed
-      req.user.permissions = mockUser.permissions;
-      return next();
-    }
-    
     // If using real DB, verify the user exists
     const user = await User.findById(decoded.id);
     if (!user) {
@@ -109,18 +81,6 @@ const checkCrmAccess = async (req, res, next) => {
     
     // For other roles, check permissions
     if (req.user.role === 'admin') {
-      // If using mock DB
-      if (process.env.USE_MOCK_DB === 'true') {
-        const mockDb = require('../utils/mockDb');
-        const admin = mockDb.findOne('users', { _id: req.user.id });
-        
-        if (!admin || !admin.permissions || !admin.permissions.crmAccess) {
-          return res.status(403).json({ message: 'You do not have access to the CRM.' });
-        }
-        
-        return next();
-      }
-      
       // If using real DB
       const admin = await User.findById(req.user.id);
       if (!admin || !admin.permissions || !admin.permissions.crmAccess) {

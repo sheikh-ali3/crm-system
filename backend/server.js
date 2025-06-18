@@ -46,22 +46,9 @@ const complaintRoutes = require('./routes/complaintRoutes'); // Import complaint
 dotenv.config();
 console.log('Environment loaded');
 
-// Force using mock database for development when MongoDB isn't available
-// process.env.USE_MOCK_DB = 'true';
-// console.log('Using mock database by default');
-
-// Mock database for development when MongoDB isn't available
-const mockDb = require('./utils/mockDb');
-
 // Connect to MongoDB with more robust error handling
 const dbConnect = async () => {
   try {
-    // Check if we should use mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      console.log('Using mock database for development');
-      return;
-    }
-    
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/crm-system';
     console.log('Attempting MongoDB connection with URI:', mongoUri);
     
@@ -163,37 +150,6 @@ app.use('/api/complaints', complaintRoutes);
 // Direct route for superadmin quotations to fix 500 error
 app.get('/services/superadmin/quotations', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
-    console.log('Direct handler for superadmin quotations called');
-    
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      // Mock quotations data with structure matching the model
-      const quotations = [
-        { 
-          _id: '60d21b4667d0d8992e610c85',
-          serviceId: { 
-            _id: '60d21b4667d0d8992e610c80', 
-            name: 'Web Development', 
-            price: 2500,
-            category: 'IT'
-          },
-          adminId: {
-            _id: '60d21b4667d0d8992e610c70',
-            email: 'admin@example.com',
-            profile: { fullName: 'Test Admin' }
-          },
-          status: 'pending',
-          requestDetails: 'Need a corporate website with 5 pages',
-          enterpriseDetails: { companyName: 'Acme Corp', contactPerson: 'John Doe' },
-          requestedPrice: 5000,
-          createdAt: new Date('2023-06-15')
-        },
-        // ... other mock quotations
-      ];
-      
-      return res.status(200).json(quotations);
-    }
-    
     // Use MongoDB to fetch real quotations
     const Quotation = require('./models/quotationModel');
     const quotations = await Quotation.find()
@@ -211,32 +167,6 @@ app.get('/services/superadmin/quotations', authenticateToken, authorizeRole('sup
 // Direct route for superadmin service stats to fix 500 error
 app.get('/services/superadmin/stats/summary', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
-    console.log('Direct handler for superadmin service stats called');
-    
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      // Mock service statistics data
-      const stats = {
-        totalServices: 12,
-        activeServices: 10,
-        totalQuotations: 24,
-        quotationsByStatus: {
-          pending: 8,
-          approved: 6,
-          rejected: 4,
-          completed: 6
-        },
-        servicesByCategory: {
-          'IT': 5,
-          'Design': 3,
-          'Marketing': 2,
-          'Consulting': 2
-        }
-      };
-      
-      return res.status(200).json(stats);
-    }
-    
     // Use MongoDB to fetch real statistics
     const Service = require('./models/serviceModel');
     const Quotation = require('./models/quotationModel');
@@ -287,34 +217,6 @@ app.get('/services/superadmin/stats/summary', authenticateToken, authorizeRole('
 // Direct route for superadmin services to fix 500 error
 app.get('/services/superadmin', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
-    console.log('Direct handler for superadmin services called');
-    
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      // Mock services data
-      const services = [
-        {
-          _id: '60d21b4667d0d8992e610c80',
-          name: 'Web Development',
-          description: 'Professional web development services including frontend and backend development, responsive design, and CMS integration.',
-          price: 2500,
-          category: 'IT',
-          icon: '🌐',
-          features: [
-            { name: 'Responsive Design', included: true },
-            { name: 'CMS Integration', included: true },
-            { name: 'SEO Optimization', included: false }
-          ],
-          duration: { value: 30, unit: 'days' },
-          active: true,
-          createdAt: new Date('2023-01-15')
-        },
-        // ... other mock services
-      ];
-      
-      return res.status(200).json(services);
-    }
-    
     // Use MongoDB to fetch real services
     const Service = require('./models/serviceModel');
     const services = await Service.find().sort({ createdAt: -1 });
@@ -329,8 +231,6 @@ app.get('/services/superadmin', authenticateToken, authorizeRole('superadmin'), 
 // Direct route for creating services (SuperAdmin only)
 app.post('/services/superadmin', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
-    console.log('Direct handler for creating service called');
-    
     const { name, description, price, category, icon, features, duration, active } = req.body;
     
     // Validate required fields
@@ -355,18 +255,10 @@ app.post('/services/superadmin', authenticateToken, authorizeRole('superadmin'),
     
     let savedService;
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('./utils/mockDb');
-      savedService = mockDb.create('services', serviceData);
-      console.log('Service created in mock DB:', savedService._id);
-    } else {
-      // Create service with current user as creator
-      const Service = require('./models/serviceModel');
-      const newService = new Service(serviceData);
-      savedService = await newService.save();
-      console.log('Service created in MongoDB:', savedService._id);
-    }
+    // Create service with current user as creator
+    const Service = require('./models/serviceModel');
+    const newService = new Service(serviceData);
+    savedService = await newService.save();
     
     res.status(201).json({
       message: 'Service created successfully',
@@ -381,21 +273,18 @@ app.post('/services/superadmin', authenticateToken, authorizeRole('superadmin'),
 // Direct route for updating services (SuperAdmin only)
 app.put('/services/superadmin/:id', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
-    console.log('Direct handler for updating service called:', req.params.id);
-    
     const { name, description, price, category, icon, features, duration, active } = req.body;
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('./utils/mockDb');
-      const service = mockDb.findById('services', req.params.id);
-      
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Update service in mock DB
-      const updatedService = mockDb.update('services', req.params.id, {
+    // Find service
+    const service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+    
+    // Update service
+    const updatedService = await Service.findByIdAndUpdate(
+      req.params.id,
+      {
         name: name || service.name,
         description: description || service.description,
         price: price !== undefined ? parseFloat(price) : service.price,
@@ -405,48 +294,14 @@ app.put('/services/superadmin/:id', authenticateToken, authorizeRole('superadmin
         duration: duration || service.duration,
         active: active !== undefined ? active : service.active,
         updatedAt: new Date()
-      });
-      
-      console.log('Service updated in mock DB:', updatedService._id);
-      
-      return res.status(200).json({
-        message: 'Service updated successfully',
-        service: updatedService
-      });
-    } else {
-      // Using real MongoDB
-      const Service = require('./models/serviceModel');
-      
-      // Find service
-      const service = await Service.findById(req.params.id);
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Update service
-      const updatedService = await Service.findByIdAndUpdate(
-        req.params.id,
-        {
-          name: name || service.name,
-          description: description || service.description,
-          price: price !== undefined ? parseFloat(price) : service.price,
-          category: category || service.category,
-          icon: icon || service.icon,
-          features: features || service.features,
-          duration: duration || service.duration,
-          active: active !== undefined ? active : service.active,
-          updatedAt: new Date()
-        },
-        { new: true, runValidators: true }
-      );
-      
-      console.log('Service updated in MongoDB:', updatedService._id);
-      
-      res.status(200).json({
-        message: 'Service updated successfully',
-        service: updatedService
-      });
-    }
+      },
+      { new: true, runValidators: true }
+    );
+    
+    res.status(200).json({
+      message: 'Service updated successfully',
+      service: updatedService
+    });
   } catch (error) {
     console.error('Service update error:', error);
     res.status(500).json({ message: 'Failed to update service', error: error.message });
@@ -456,79 +311,19 @@ app.put('/services/superadmin/:id', authenticateToken, authorizeRole('superadmin
 // Direct route for deleting services (SuperAdmin only)
 app.delete('/services/superadmin/:id', authenticateToken, authorizeRole('superadmin'), async (req, res) => {
   try {
-    console.log('Direct handler for deleting service called:', req.params.id);
+    // Find service
+    const service = await Service.findById(req.params.id);
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('./utils/mockDb');
-      const service = mockDb.findById('services', req.params.id);
-      
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Check if there are quotations for this service
-      const quotations = mockDb.find('quotations', { serviceId: req.params.id });
-      
-      if (quotations.length > 0) {
-        // If service has quotations, just mark it as inactive instead of deleting
-        const updatedService = mockDb.update('services', req.params.id, { 
-          active: false, 
-          updatedAt: new Date() 
-        });
-        
-        return res.status(200).json({
-          message: 'Service has existing quotations. Marked as inactive instead of deleting.',
-          service: updatedService,
-          quotationCount: quotations.length
-        });
-      }
-      
-      // Delete the service
-      mockDb.delete('services', req.params.id);
-      console.log('Service deleted from mock DB:', req.params.id);
-      
-      return res.status(200).json({
-        message: 'Service deleted successfully'
-      });
-    } else {
-      // Using real MongoDB
-      const Service = require('./models/serviceModel');
-      const Quotation = require('./models/quotationModel');
-      
-      // Find service
-      const service = await Service.findById(req.params.id);
-      
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Check if there are quotations for this service
-      const quotationCount = await Quotation.countDocuments({ serviceId: req.params.id });
-      
-      if (quotationCount > 0) {
-        // If service has quotations, just mark it as inactive instead of deleting
-        const updatedService = await Service.findByIdAndUpdate(
-          req.params.id,
-          { active: false, updatedAt: new Date() },
-          { new: true }
-        );
-        
-        return res.status(200).json({
-          message: 'Service has existing quotations. Marked as inactive instead of deleting.',
-          service: updatedService,
-          quotationCount
-        });
-      }
-      
-      // No quotations, safe to delete
-      await Service.findByIdAndDelete(req.params.id);
-      console.log('Service deleted from MongoDB:', req.params.id);
-      
-      res.status(200).json({
-        message: 'Service deleted successfully'
-      });
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
     }
+    
+    // No quotations, safe to delete
+    await Service.findByIdAndDelete(req.params.id);
+    
+    res.status(200).json({
+      message: 'Service deleted successfully'
+    });
   } catch (error) {
     console.error('Service deletion error:', error);
     res.status(500).json({ message: 'Failed to delete service', error: error.message });
@@ -576,12 +371,6 @@ app.use((req, res, next) => {
 // Initialize Super Admin if not exists
 const initializeSuperAdmin = async () => {
   try {
-    // Skip if using mock database
-    if (process.env.USE_MOCK_DB === 'true') {
-      console.log('Mock database is enabled, skipping MongoDB user initialization');
-      return;
-    }
-
     console.log('Checking for existing SuperAdmin...');
     const superAdmin = await User.findOne({ role: 'superadmin' });
     
@@ -786,15 +575,6 @@ app.put('/superadmin/admins/:id', authenticateToken, authorizeRole('superadmin')
     const { id } = req.params;
     const updateData = req.body;
     
-    console.log('Updating admin:', { id, updateData });
-    
-    // Ensure permissions object exists and is properly structured
-    if (updateData.permissions) {
-      updateData.permissions = {
-        crmAccess: Boolean(updateData.permissions.crmAccess)
-      };
-    }
-    
     // If updating password, hash it
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
@@ -838,15 +618,10 @@ app.put('/superadmin/admins/:id/toggle-crm-access', authenticateToken, authorize
     const { id } = req.params;
     const { crmAccess } = req.body;
     
-    console.log(`Toggling CRM access for admin ${id} to: ${crmAccess}`);
-    
-    // Ensure the value is a boolean
-    const accessValue = Boolean(crmAccess);
-    
     // Update the admin permissions
     const admin = await User.findByIdAndUpdate(
       id,
-      { $set: { 'permissions.crmAccess': accessValue } },
+      { $set: { 'permissions.crmAccess': crmAccess } },
       { new: true, runValidators: true }
     ).select('-password');
     
@@ -862,7 +637,7 @@ app.put('/superadmin/admins/:id/toggle-crm-access', authenticateToken, authorize
     
     res.json({
       success: true,
-      message: `CRM access ${accessValue ? 'granted' : 'revoked'} successfully`,
+      message: `CRM access ${crmAccess ? 'granted' : 'revoked'} successfully`,
       admin: {
         id: admin._id,
         email: admin.email,
@@ -907,57 +682,6 @@ app.post('/superadmin/login', async (req, res) => {
     if (!email || !password) {
       console.log('Login attempt with missing credentials');
       return res.status(400).json({ message: 'Email and password are required.' });
-    }
-
-    // Check if mock database is enabled
-    if (process.env.USE_MOCK_DB === 'true') {
-      // For mock database, use the mock data directly
-      const mockDb = require('./utils/mockDb');
-      const user = mockDb.findOne('users', { email, role: 'superadmin' });
-      
-      if (!user) {
-        console.log('Superadmin not found in mock DB:', { email });
-        return res.status(403).json({ message: 'Access denied. Super Admin only.' });
-      }
-
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        console.log('Invalid password for superadmin in mock DB:', { email });
-        return res.status(401).json({ message: 'Invalid credentials.' });
-      }
-
-      // Generate JWT token with extended expiration (7 days)
-      const token = jwt.sign(
-        { 
-          id: user._id, 
-          email: user.email, 
-          role: user.role,
-          exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60) // 7 days
-        },
-        process.env.JWT_SECRET
-      );
-
-      console.log('Superadmin login successful (mock DB):', { email, userId: user._id });
-      return res.json({
-        message: 'Login successful',
-        token,
-        role: user.role,
-        user: {
-          id: user._id,
-          email: user.email,
-          role: user.role
-        }
-      });
-    }
-
-    // MongoDB path - only reached if mock DB is not enabled
-    // Check if MongoDB is connected
-    if (mongoose.connection.readyState !== 1) {
-      console.error('MongoDB not connected during superadmin login attempt');
-      return res.status(500).json({ 
-        message: 'Database connection error. Please try again later.',
-        dbStatus: 'disconnected'  
-      });
     }
 
     const user = await User.findOne({ email, role: 'superadmin' });
@@ -1212,35 +936,6 @@ app.get('/user', authenticateToken, authorizeRole('user'), (req, res) => {
 // GET all customers (filtered by role)
 app.get('/crm/customers', authenticateToken, checkCrmAccess, async (req, res) => {
   try {
-    // Check if using mock database
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('./utils/mockDb');
-      let customers = mockDb.find('customers', {});
-      
-      // If admin, only show their assigned customers
-      if (req.user.role === 'admin') {
-        customers = customers.filter(customer => customer.assignedTo === req.user.id);
-      }
-      
-      // Populate assigned admin info
-      customers = customers.map(customer => {
-        const admin = mockDb.findOne('users', { _id: customer.assignedTo });
-        return {
-          ...customer,
-          assignedTo: admin ? {
-            _id: admin._id,
-            email: admin.email,
-            profile: admin.profile || {}
-          } : customer.assignedTo
-        };
-      });
-      
-      return res.json(customers);
-    }
-    
-    // If using real MongoDB
-    let query = {};
-    
     // If admin, only show their assigned customers
     if (req.user.role === 'admin') {
       query.assignedTo = req.user.id;
@@ -1486,23 +1181,6 @@ app.post('/admin/create-user', authenticateToken, authorizeRole('admin'), async 
 // Get Users Route (Admin only)
 app.get('/admin/users', authenticateToken, authorizeRole('admin'), async (req, res) => {
   try {
-    // Check if using mock database
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('./utils/mockDb');
-      const users = mockDb.find('users', { 
-        createdBy: req.user.id,
-        role: 'user'
-      });
-      
-      // Remove passwords from response
-      const usersWithoutPasswords = users.map(user => {
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      });
-      
-      return res.json(usersWithoutPasswords);
-    }
-    
     // If using real MongoDB
     const users = await User.find({ 
       createdBy: req.user.id,
@@ -1602,34 +1280,6 @@ app.get('/admin/verify', authenticateToken, async (req, res) => {
     
     console.log('Admin verification for user ID:', req.user.id);
 
-    // Check if using mock database
-    if (process.env.USE_MOCK_DB === 'true') {
-      console.log('Using mock DB for admin verification');
-      const mockDb = require('./utils/mockDb');
-      const user = mockDb.findOne('users', { 
-        _id: req.user.id, 
-        role: 'admin' 
-      });
-
-      if (!user) {
-        console.log('Admin verification failed: user not found or not admin');
-        return res.status(403).json({ 
-          message: 'Access denied. Admin role required.',
-          success: false,
-          error: 'unauthorized_role'
-        });
-      }
-
-      // Return user data without password
-      const { password, ...userWithoutPassword } = user;
-      console.log('Admin verification successful for:', user.email);
-      return res.json({ 
-        message: 'Authenticated as admin', 
-        user: userWithoutPassword,
-        success: true
-      });
-    }
-
     // If using real MongoDB
     const user = await User.findOne({ 
       _id: req.user.id, 
@@ -1716,7 +1366,6 @@ app.post('/superadmin/crm/customers', authenticateToken, authorizeRole('superadm
     console.log('Customer created successfully:', savedCustomer);
     res.status(201).json(savedCustomer);
   } catch (error) {
-    console.error('Error creating customer:', error);
     // Check for duplicate key error (MongoDB error code 11000)
     if (error.code === 11000) {
       return res.status(400).json({ message: 'A customer with this email already exists' });
@@ -1770,7 +1419,6 @@ app.put('/superadmin/crm/customers/:id', authenticateToken, authorizeRole('super
     console.log('Customer updated successfully:', updatedCustomer);
     res.json(updatedCustomer);
   } catch (error) {
-    console.error('Error updating customer:', error);
     // Check for duplicate key error (MongoDB error code 11000)
     if (error.code === 11000) {
       return res.status(400).json({ message: 'A customer with this email already exists' });
@@ -2357,15 +2005,6 @@ app.get('/crm/activities', authenticateToken, async (req, res) => {
   try {
     const { status, type, timeframe } = req.query;
     
-    // Check permissions for admin
-    if (req.user.role === 'admin') {
-      const user = await User.findById(req.user.id);
-      
-      if (!user || !user.permissions?.crmAccess) {
-        return res.status(403).json({ message: 'You do not have access to CRM' });
-      }
-    }
-    
     // Build query
     let query = {};
     
@@ -2420,11 +2059,6 @@ app.post('/crm/customers/:customerId/activities', authenticateToken, async (req,
     const { customerId } = req.params;
     const { type, subject, description, status, dueDate, isImportant } = req.body;
     
-    // Validate required fields
-    if (!type || !subject) {
-      return res.status(400).json({ message: 'Type and subject are required' });
-    }
-    
     // Check if the customer exists
     const customer = await Customer.findById(customerId);
     if (!customer) {
@@ -2457,10 +2091,6 @@ app.post('/crm/customers/:customerId/activities', authenticateToken, async (req,
       assignedTo: customer.assignedTo,
       isImportant: isImportant || false
     });
-    
-    // Populate references
-    await activity.populate('createdBy', 'email profile.fullName');
-    await activity.populate('assignedTo', 'email profile.fullName');
     
     // Update customer lastContact field
     customer.lastContact = new Date();
@@ -2522,10 +2152,6 @@ app.put('/crm/activities/:activityId', authenticateToken, async (req, res) => {
     if (isImportant !== undefined) activity.isImportant = isImportant;
     
     await activity.save();
-    
-    // Populate references
-    await activity.populate('createdBy', 'email profile.fullName');
-    await activity.populate('assignedTo', 'email profile.fullName');
     
     res.json({
       message: 'Activity updated successfully',

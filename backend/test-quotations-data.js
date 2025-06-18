@@ -96,7 +96,6 @@ async function testQuotationsData() {
       
       if (serviceNames.includes('Web Development') && serviceNames.includes('UI/UX Design')) {
         console.log('📝 Data Source: Mock Database (Sample Data)');
-        console.log('   - Services and quotations are generated from mockDb.js');
         console.log('   - 10 sample quotations are created for random admins');
         console.log('   - Each admin gets quotations based on their adminId');
       } else {

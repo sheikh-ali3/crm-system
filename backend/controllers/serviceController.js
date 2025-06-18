@@ -21,16 +21,7 @@ exports.getAllServices = async (req, res) => {
     
     let services = [];
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      services = mockDb.find('services', query);
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`Found ${services.length} services in mock DB`);
-      }
-    } else {
-      services = await Service.find(query).sort({ createdAt: -1 });
-    }
+    services = await Service.find(query).sort({ createdAt: -1 });
     
     res.status(200).json(services);
   } catch (error) {
@@ -44,13 +35,7 @@ exports.getServiceById = async (req, res) => {
   try {
     let service;
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      service = mockDb.findById('services', req.params.id);
-    } else {
-      service = await Service.findById(req.params.id);
-    }
+    service = await Service.findById(req.params.id);
     
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
@@ -95,18 +80,9 @@ exports.createService = async (req, res) => {
     
     let savedService;
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      savedService = mockDb.create('services', serviceData);
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Service created in mock DB:', savedService._id);
-      }
-    } else {
-      // Create service with current user as creator
-      const newService = new Service(serviceData);
-      savedService = await newService.save();
-    }
+    // Create service with current user as creator
+    const newService = new Service(serviceData);
+    savedService = await newService.save();
     
     res.status(201).json({
       message: 'Service created successfully',
@@ -126,17 +102,16 @@ exports.updateService = async (req, res) => {
     let service;
     let updatedService;
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      service = mockDb.findById('services', req.params.id);
-      
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Update service in mock DB
-      updatedService = mockDb.update('services', req.params.id, {
+    // Validate service existence
+    service = await Service.findById(req.params.id);
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+    
+    // Update service
+    updatedService = await Service.findByIdAndUpdate(
+      req.params.id,
+      {
         name: name || service.name,
         description: description || service.description,
         price: price !== undefined ? parseFloat(price) : service.price,
@@ -146,35 +121,9 @@ exports.updateService = async (req, res) => {
         duration: duration || service.duration,
         active: active !== undefined ? active : service.active,
         updatedAt: new Date()
-      });
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Service updated in mock DB:', updatedService._id);
-      }
-    } else {
-      // Validate service existence
-      service = await Service.findById(req.params.id);
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Update service
-      updatedService = await Service.findByIdAndUpdate(
-        req.params.id,
-        {
-          name: name || service.name,
-          description: description || service.description,
-          price: price !== undefined ? parseFloat(price) : service.price,
-          category: category || service.category,
-          icon: icon || service.icon,
-          features: features || service.features,
-          duration: duration || service.duration,
-          active: active !== undefined ? active : service.active,
-          updatedAt: new Date()
-        },
-        { new: true, runValidators: true }
-      );
-    }
+      },
+      { new: true, runValidators: true }
+    );
     
     res.status(200).json({
       message: 'Service updated successfully',
@@ -192,63 +141,32 @@ exports.deleteService = async (req, res) => {
     let service;
     let quotationCount = 0;
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      service = mockDb.findById('services', req.params.id);
-      
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Check for quotations with this service
-      quotationCount = mockDb.find('quotations', { serviceId: req.params.id }).length;
-      
-      if (quotationCount > 0) {
-        // Mark as inactive instead of deleting
-        const updatedService = mockDb.update('services', req.params.id, { 
-          active: false, 
-          updatedAt: new Date() 
-        });
-        
-        return res.status(200).json({
-          message: 'Service has existing quotations. Marked as inactive instead of deleting.',
-          service: updatedService,
-          quotationCount
-        });
-      }
-      
-      // Delete the service
-      mockDb.delete('services', req.params.id);
-      console.log('Service deleted from mock DB:', req.params.id);
-    } else {
-      service = await Service.findById(req.params.id);
-      
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Check if there are quotations for this service
-      quotationCount = await Quotation.countDocuments({ serviceId: req.params.id });
-      
-      if (quotationCount > 0) {
-        // If service has quotations, just mark it as inactive instead of deleting
-        const updatedService = await Service.findByIdAndUpdate(
-          req.params.id,
-          { active: false, updatedAt: new Date() },
-          { new: true }
-        );
-        
-        return res.status(200).json({
-          message: 'Service has existing quotations. Marked as inactive instead of deleting.',
-          service: updatedService,
-          quotationCount
-        });
-      }
-      
-      // No quotations, safe to delete
-      await Service.findByIdAndDelete(req.params.id);
+    service = await Service.findById(req.params.id);
+    
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
     }
+    
+    // Check if there are quotations for this service
+    quotationCount = await Quotation.countDocuments({ serviceId: req.params.id });
+    
+    if (quotationCount > 0) {
+      // If service has quotations, just mark it as inactive instead of deleting
+      const updatedService = await Service.findByIdAndUpdate(
+        req.params.id,
+        { active: false, updatedAt: new Date() },
+        { new: true }
+      );
+      
+      return res.status(200).json({
+        message: 'Service has existing quotations. Marked as inactive instead of deleting.',
+        service: updatedService,
+        quotationCount
+      });
+    }
+    
+    // No quotations, safe to delete
+    await Service.findByIdAndDelete(req.params.id);
     
     res.status(200).json({
       message: 'Service deleted successfully'
@@ -264,48 +182,18 @@ exports.getAdminQuotations = async (req, res) => {
   try {
     let quotations = [];
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      
-      // Get quotations for this admin from mock DB
-      quotations = mockDb.find('quotations', { adminId: req.user.id });
-      
-      // Populate service data
-      quotations = quotations.map(quotation => {
-        const service = mockDb.findById('services', quotation.serviceId);
-        
-        return {
-          ...quotation,
-          serviceId: service ? {
-            _id: service._id,
-            name: service.name,
-            price: service.price,
-            category: service.category
-          } : quotation.serviceId
-        };
-      });
-      
-      // Filter by status if specified
-      if (req.query.status) {
-        quotations = quotations.filter(q => q.status === req.query.status);
-      }
-      
-      console.log(`Found ${quotations.length} quotations for admin in mock DB`);
-    } else {
-      // Build query for this admin
-      let query = { adminId: req.user.id };
-      
-      // Status filter
-      if (req.query.status) {
-        query.status = req.query.status;
-      }
-      
-      // Get quotations from database with populated references
-      quotations = await Quotation.find(query)
-        .sort({ createdAt: -1 })
-        .populate('serviceId', 'name price category');
+    // Build query for this admin
+    let query = { adminId: req.user.id };
+    
+    // Status filter
+    if (req.query.status) {
+      query.status = req.query.status;
     }
+    
+    // Get quotations from database with populated references
+    quotations = await Quotation.find(query)
+      .sort({ createdAt: -1 })
+      .populate('serviceId', 'name price category');
     
     res.status(200).json(quotations);
   } catch (error) {
@@ -323,72 +211,35 @@ exports.requestQuotation = async (req, res) => {
     let service;
     let savedQuotation;
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      
-      // Find service in mock DB
-      service = mockDb.findById('services', serviceId);
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Get admin data
-      const admin = mockDb.findById('users', req.user.id);
-      
-      // Create quotation data
-      const quotationData = {
-        serviceId,
-        adminId: req.user.id,
-        requestDetails,
-        customRequirements,
-        requestedPrice: requestedPrice ? parseFloat(requestedPrice) : null,
-        enterpriseDetails: enterpriseDetails || {
-          companyName: admin?.profile?.companyName || `${admin?.profile?.fullName || 'Enterprise'} Company`,
-          contactPerson: admin?.profile?.fullName || '',
-          email: admin?.email || '',
-          phone: admin?.profile?.phone || ''
-        },
-        status: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      
-      // Save quotation to mock DB
-      savedQuotation = mockDb.create('quotations', quotationData);
-      console.log('Quotation created in mock DB:', savedQuotation._id);
-      return res.status(201).json(savedQuotation);
-    } else {
-      // Validate service existence
-      service = await Service.findById(serviceId);
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
-      }
-      
-      // Validate required fields
-      if (!requestDetails) {
-        return res.status(400).json({ message: 'Request details are required' });
-      }
-      
-      // Create new quotation request
-      const newQuotation = new Quotation({
-        serviceId,
-        adminId: req.user.id,
-        requestDetails,
-        customRequirements,
-        requestedPrice: requestedPrice ? parseFloat(requestedPrice) : undefined,
-        enterpriseDetails: enterpriseDetails || {
-          companyName: req.user.enterprise?.companyName || '',
-          contactPerson: req.user.profile?.fullName || '',
-          email: req.user.email || '',
-          phone: req.user.profile?.phone || ''
-        },
-        status: 'pending'
-      });
-      
-      savedQuotation = await newQuotation.save();
-      return res.status(201).json(savedQuotation);
+    // Validate service existence
+    service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: 'Service not found' });
     }
+    
+    // Validate required fields
+    if (!requestDetails) {
+      return res.status(400).json({ message: 'Request details are required' });
+    }
+    
+    // Create new quotation request
+    const newQuotation = new Quotation({
+      serviceId,
+      adminId: req.user.id,
+      requestDetails,
+      customRequirements,
+      requestedPrice: requestedPrice ? parseFloat(requestedPrice) : undefined,
+      enterpriseDetails: enterpriseDetails || {
+        companyName: req.user.enterprise?.companyName || '',
+        contactPerson: req.user.profile?.fullName || '',
+        email: req.user.email || '',
+        phone: req.user.profile?.phone || ''
+      },
+      status: 'pending'
+    });
+    
+    savedQuotation = await newQuotation.save();
+    return res.status(201).json(savedQuotation);
   } catch (error) {
     console.error('Error requesting quotation:', error);
     res.status(500).json({ message: 'Failed to request quotation', error: error.message });
@@ -400,55 +251,19 @@ exports.getAllQuotations = async (req, res) => {
   try {
     let quotations = [];
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      
-      // Get all quotations from mock DB
-      quotations = mockDb.find('quotations', {});
-      
-      // Populate service and admin data
-      quotations = quotations.map(quotation => {
-        const service = mockDb.findById('services', quotation.serviceId);
-        const admin = mockDb.findById('users', quotation.adminId);
-        
-        return {
-          ...quotation,
-          serviceId: service ? {
-            _id: service._id,
-            name: service.name,
-            price: service.price,
-            category: service.category
-          } : quotation.serviceId,
-          adminId: admin ? {
-            _id: admin._id,
-            email: admin.email,
-            profile: admin.profile
-          } : quotation.adminId
-        };
-      });
-      
-      // Filter by status if specified
-      if (req.query.status) {
-        quotations = quotations.filter(q => q.status === req.query.status);
-      }
-      
-      console.log(`Found ${quotations.length} quotations in mock DB`);
-    } else {
-      // Build query
-      let query = {};
-      
-      // Status filter
-      if (req.query.status) {
-        query.status = req.query.status;
-      }
-      
-      // Get quotations from database with populated references
-      quotations = await Quotation.find(query)
-        .sort({ createdAt: -1 })
-        .populate('serviceId', 'name price category')
-        .populate('adminId', 'email profile');
+    // Build query
+    let query = {};
+    
+    // Status filter
+    if (req.query.status) {
+      query.status = req.query.status;
     }
+    
+    // Get quotations from database with populated references
+    quotations = await Quotation.find(query)
+      .sort({ createdAt: -1 })
+      .populate('serviceId', 'name price category')
+      .populate('adminId', 'email profile');
     
     res.status(200).json(quotations);
   } catch (error) {
@@ -484,46 +299,29 @@ exports.updateQuotationStatus = async (req, res) => {
     
     let quotation;
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      console.log('Using mock database');
-      const mockDb = require('../utils/mockDb');
-      
-      // Find quotation in mock DB
-      quotation = mockDb.findById('quotations', quotationId);
-      if (!quotation) {
-        console.log('ERROR: Quotation not found in mock DB');
-        return res.status(404).json({ message: 'Quotation not found' });
-      }
-      
-      console.log('Found quotation in mock DB:', quotation);
-    } else {
-      console.log('Using real database');
-      
-      // Find quotation in real DB
-      try {
-        quotation = await Quotation.findById(quotationId);
-        console.log('Database query result:', quotation);
-      } catch (dbError) {
-        console.error('Database query error:', dbError);
-        return res.status(500).json({ 
-          message: 'Database error while finding quotation', 
-          error: dbError.message 
-        });
-      }
-      
-      if (!quotation) {
-        console.log('ERROR: Quotation not found in database');
-        return res.status(404).json({ message: 'Quotation not found' });
-      }
-      
-      console.log('Found quotation in database:', {
-        _id: quotation._id,
-        status: quotation.status,
-        serviceId: quotation.serviceId,
-        adminId: quotation.adminId
+    // Find quotation in real DB
+    try {
+      quotation = await Quotation.findById(quotationId);
+      console.log('Database query result:', quotation);
+    } catch (dbError) {
+      console.error('Database query error:', dbError);
+      return res.status(500).json({ 
+        message: 'Database error while finding quotation', 
+        error: dbError.message 
       });
     }
+    
+    if (!quotation) {
+      console.log('ERROR: Quotation not found in database');
+      return res.status(404).json({ message: 'Quotation not found' });
+    }
+    
+    console.log('Found quotation in database:', {
+      _id: quotation._id,
+      status: quotation.status,
+      serviceId: quotation.serviceId,
+      adminId: quotation.adminId
+    });
     
     // Validate status transitions
     if (quotation.status === 'completed') {
@@ -598,27 +396,20 @@ exports.updateQuotationStatus = async (req, res) => {
     let updatedQuotation;
     
     // Update quotation
-    if (process.env.USE_MOCK_DB === 'true') {
-      console.log('Updating quotation in mock DB');
-      updatedQuotation = mockDb.update('quotations', quotationId, updateData);
-      console.log('Mock DB update result:', updatedQuotation);
-    } else {
-      console.log('Updating quotation in database');
-      try {
-        updatedQuotation = await Quotation.findByIdAndUpdate(
-          quotationId,
-          updateData,
-          { new: true, runValidators: true }
-        ).populate('serviceId').populate('adminId', 'email profile');
-        
-        console.log('Database update result:', updatedQuotation);
-      } catch (updateError) {
-        console.error('Database update error:', updateError);
-        return res.status(500).json({ 
-          message: 'Database error while updating quotation', 
-          error: updateError.message 
-        });
-      }
+    try {
+      updatedQuotation = await Quotation.findByIdAndUpdate(
+        quotationId,
+        updateData,
+        { new: true, runValidators: true }
+      ).populate('serviceId').populate('adminId', 'email profile');
+      
+      console.log('Database update result:', updatedQuotation);
+    } catch (updateError) {
+      console.error('Database update error:', updateError);
+      return res.status(500).json({ 
+        message: 'Database error while updating quotation', 
+        error: updateError.message 
+      });
     }
     
     if (!updatedQuotation) {
@@ -634,15 +425,8 @@ exports.updateQuotationStatus = async (req, res) => {
         console.log('Creating notification for admin:', quotation.adminId);
         
         let serviceName = 'your requested service';
-        if (process.env.USE_MOCK_DB === 'true') {
-          const mockDb = require('../utils/mockDb');
-          const service = mockDb.findById('services', quotation.serviceId);
-          serviceName = service?.name || serviceName;
-        } else {
-          const Service = require('../models/serviceModel');
-          const service = await Service.findById(quotation.serviceId);
-          serviceName = service?.name || serviceName;
-        }
+        const service = await Service.findById(quotation.serviceId);
+        serviceName = service?.name || serviceName;
         
         let message = '';
         let notificationType = 'info';
@@ -664,33 +448,17 @@ exports.updateQuotationStatus = async (req, res) => {
             message = `Your quotation for ${serviceName} has been updated to ${status}`;
         }
         
-        if (process.env.USE_MOCK_DB === 'true') {
-          mockDb.create('notifications', {
-            userId: quotation.adminId,
-            message,
-            title: `Quotation ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-            type: notificationType,
-            read: false,
-            relatedTo: {
-              model: 'Quotation',
-              id: quotation._id
-            },
-            link: `/admin/services?tab=quotations`,
-            createdAt: new Date()
-          });
-        } else {
-          await notificationController.createNotification({
-            userId: quotation.adminId,
-            message,
-            title: `Quotation ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-            type: notificationType,
-            relatedTo: {
-              model: 'Quotation',
-              id: quotation._id
-            },
-            link: `/admin/services?tab=quotations`
-          });
-        }
+        await notificationController.createNotification({
+          userId: quotation.adminId,
+          message,
+          title: `Quotation ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+          type: notificationType,
+          relatedTo: {
+            model: 'Quotation',
+            id: quotation._id
+          },
+          link: `/admin/services?tab=quotations`
+        });
         
         console.log('Notification created successfully');
       }
@@ -747,79 +515,41 @@ exports.getServiceStats = async (req, res) => {
   try {
     let stats = {};
     
-    // Check if using mock DB
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      
-      // Get services
-      const services = mockDb.find('services', {});
-      
-      // Get quotations
-      const quotations = mockDb.find('quotations', {});
-      
-      // Calculate statistics
-      stats = {
-        totalServices: services.length,
-        activeServices: services.filter(s => s.active).length,
-        totalQuotations: quotations.length,
-        quotationsByStatus: {
-          pending: quotations.filter(q => q.status === 'pending').length,
-          approved: quotations.filter(q => q.status === 'approved').length,
-          rejected: quotations.filter(q => q.status === 'rejected').length,
-          completed: quotations.filter(q => q.status === 'completed').length
-        },
-        servicesByCategory: {}
-      };
-      
-      // Group services by category
-      services.forEach(service => {
-        const category = service.category || 'Uncategorized';
-        if (!stats.servicesByCategory[category]) {
-          stats.servicesByCategory[category] = 0;
-        }
-        stats.servicesByCategory[category]++;
-      });
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Retrieved service stats from mock DB');
-      }
-    } else {
-      // Get services count
-      const totalServices = await Service.countDocuments();
-      const activeServices = await Service.countDocuments({ active: true });
-      
-      // Get quotations count
-      const totalQuotations = await Quotation.countDocuments();
-      const pendingQuotations = await Quotation.countDocuments({ status: 'pending' });
-      const approvedQuotations = await Quotation.countDocuments({ status: 'approved' });
-      const rejectedQuotations = await Quotation.countDocuments({ status: 'rejected' });
-      const completedQuotations = await Quotation.countDocuments({ status: 'completed' });
-      
-      // Get services by category
-      const servicesByCategory = await Service.aggregate([
-        { $group: { _id: '$category', count: { $sum: 1 } } }
-      ]);
-      
-      // Format the category data
-      const categoryData = {};
-      servicesByCategory.forEach(item => {
-        categoryData[item._id || 'Uncategorized'] = item.count;
-      });
-      
-      // Compile statistics
-      stats = {
-        totalServices,
-        activeServices,
-        totalQuotations,
-        quotationsByStatus: {
-          pending: pendingQuotations,
-          approved: approvedQuotations,
-          rejected: rejectedQuotations,
-          completed: completedQuotations
-        },
-        servicesByCategory: categoryData
-      };
-    }
+    // Get services count
+    const totalServices = await Service.countDocuments();
+    const activeServices = await Service.countDocuments({ active: true });
+    
+    // Get quotations count
+    const totalQuotations = await Quotation.countDocuments();
+    const pendingQuotations = await Quotation.countDocuments({ status: 'pending' });
+    const approvedQuotations = await Quotation.countDocuments({ status: 'approved' });
+    const rejectedQuotations = await Quotation.countDocuments({ status: 'rejected' });
+    const completedQuotations = await Quotation.countDocuments({ status: 'completed' });
+    
+    // Get services by category
+    const servicesByCategory = await Service.aggregate([
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ]);
+    
+    // Format the category data
+    const categoryData = {};
+    servicesByCategory.forEach(item => {
+      categoryData[item._id || 'Uncategorized'] = item.count;
+    });
+    
+    // Compile statistics
+    stats = {
+      totalServices,
+      activeServices,
+      totalQuotations,
+      quotationsByStatus: {
+        pending: pendingQuotations,
+        approved: approvedQuotations,
+        rejected: rejectedQuotations,
+        completed: completedQuotations
+      },
+      servicesByCategory: categoryData
+    };
     
     res.status(200).json(stats);
   } catch (error) {
@@ -847,38 +577,20 @@ exports.testQuotation = async (req, res) => {
     const quotationId = req.params.id;
     console.log('Testing quotation with ID:', quotationId);
     
-    if (process.env.USE_MOCK_DB === 'true') {
-      const mockDb = require('../utils/mockDb');
-      const quotation = mockDb.findById('quotations', quotationId);
-      console.log('Mock DB test result:', quotation);
-      
-      if (quotation) {
-        res.status(200).json({
-          message: 'Quotation found in mock DB',
-          quotation: quotation
-        });
-      } else {
-        res.status(404).json({
-          message: 'Quotation not found in mock DB',
-          availableQuotations: mockDb.find('quotations', {}).map(q => ({ id: q._id, status: q.status }))
-        });
-      }
+    const quotation = await Quotation.findById(quotationId);
+    console.log('Real DB test result:', quotation);
+    
+    if (quotation) {
+      res.status(200).json({
+        message: 'Quotation found in real DB',
+        quotation: quotation
+      });
     } else {
-      const quotation = await Quotation.findById(quotationId);
-      console.log('Real DB test result:', quotation);
-      
-      if (quotation) {
-        res.status(200).json({
-          message: 'Quotation found in real DB',
-          quotation: quotation
-        });
-      } else {
-        const allQuotations = await Quotation.find({}).select('_id status');
-        res.status(404).json({
-          message: 'Quotation not found in real DB',
-          availableQuotations: allQuotations
-        });
-      }
+      const allQuotations = await Quotation.find({}).select('_id status');
+      res.status(404).json({
+        message: 'Quotation not found in real DB',
+        availableQuotations: allQuotations
+      });
     }
   } catch (error) {
     console.error('Test quotation error:', error);
