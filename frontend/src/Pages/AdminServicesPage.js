@@ -165,92 +165,6 @@ const AdminServicesPage = () => {
     return true;
   }, []);
 
-  // Helper function to provide sample services data
-  const getSampleServices = useCallback(() => {
-    return [
-      { 
-        id: 1, 
-        name: 'Web Development', 
-        icon: '🌐', 
-        category: 'IT', 
-        price: 2500, 
-        status: 'active',
-        description: 'Professional web development services tailored to your business needs.',
-        features: [
-          { name: 'Responsive Design', included: true },
-          { name: 'CMS Integration', included: true },
-          { name: 'E-commerce Functionality', included: true },
-          { name: 'SEO Optimization', included: false }
-        ],
-        duration: { value: 1, unit: 'month' }
-      },
-      { 
-        id: 2, 
-        name: 'Mobile App Development', 
-        icon: '📱', 
-        category: 'IT', 
-        price: 3500, 
-        status: 'active',
-        description: 'Full-cycle mobile app development for iOS and Android platforms.',
-        features: [
-          { name: 'Native Development', included: true },
-          { name: 'Cross-platform Options', included: true },
-          { name: 'API Integration', included: true },
-          { name: 'App Store Submission', included: true }
-        ],
-        duration: { value: 2, unit: 'months' }
-      },
-      { 
-        id: 3, 
-        name: 'UI/UX Design', 
-        icon: '🎨', 
-        category: 'Design', 
-        price: 1800, 
-        status: 'active',
-        description: 'User-centered design focusing on creating meaningful and relevant experiences.',
-        features: [
-          { name: 'User Research', included: true },
-          { name: 'Wireframing', included: true },
-          { name: 'Prototyping', included: true },
-          { name: 'Usability Testing', included: false }
-        ],
-        duration: { value: 3, unit: 'weeks' }
-      },
-      { 
-        id: 4, 
-        name: 'SEO Services', 
-        icon: '🔍', 
-        category: 'Marketing', 
-        price: 1200, 
-        status: 'active',
-        description: 'Boost your online visibility and drive more traffic to your website.',
-        features: [
-          { name: 'Keyword Research', included: true },
-          { name: 'On-page SEO', included: true },
-          { name: 'Technical SEO', included: true },
-          { name: 'Link Building', included: false }
-        ],
-        duration: { value: 1, unit: 'month' }
-      },
-      { 
-        id: 5, 
-        name: 'Cloud Consulting', 
-        icon: '☁️', 
-        category: 'IT', 
-        price: 2800, 
-        status: 'active',
-        description: 'Expert guidance for cloud migration, architecture, and optimization.',
-        features: [
-          { name: 'Cloud Assessment', included: true },
-          { name: 'Migration Planning', included: true },
-          { name: 'Security Review', included: true },
-          { name: 'Ongoing Support', included: false }
-        ],
-        duration: { value: 1, unit: 'one-time' }
-      }
-    ];
-  }, []);
-
   // Fetch services
   const fetchServices = useCallback(async () => {
     console.log('Attempting to fetch services');
@@ -317,97 +231,16 @@ const AdminServicesPage = () => {
         console.error('Fallback endpoint also failed:', fallbackError.message);
       }
       
-      // Use sample data as final fallback
-      console.log('Using sample services data');
-      const sampleServices = [
-        {
-          _id: '1',
-          name: 'Web Development',
-          description: 'Professional web development services tailored to your business needs.',
-          price: 2500,
-          category: 'IT',
-          icon: '🌐',
-          features: [
-            { name: 'Responsive Design', included: true },
-            { name: 'CMS Integration', included: true },
-            { name: 'E-commerce Functionality', included: true },
-            { name: 'SEO Optimization', included: false }
-          ],
-          duration: { value: 1, unit: 'month' },
-          status: 'active'
-        },
-        {
-          _id: '2',
-          name: 'Mobile App Development',
-          description: 'Full-cycle mobile app development for iOS and Android platforms.',
-          price: 3500,
-          category: 'IT',
-          icon: '📱',
-          features: [
-            { name: 'Native Development', included: true },
-            { name: 'Cross-platform Options', included: true },
-            { name: 'API Integration', included: true },
-            { name: 'App Store Submission', included: true }
-          ],
-          duration: { value: 2, unit: 'months' },
-          status: 'active'
-        },
-        {
-          _id: '3',
-          name: 'UI/UX Design',
-          description: 'User-centered design focusing on creating meaningful and relevant experiences.',
-          price: 1800,
-          category: 'Design',
-          icon: '🎨',
-          features: [
-            { name: 'User Research', included: true },
-            { name: 'Wireframing', included: true },
-            { name: 'Prototyping', included: true },
-            { name: 'Usability Testing', included: false }
-          ],
-          duration: { value: 3, unit: 'weeks' },
-          status: 'active'
-        },
-        {
-          _id: '4',
-          name: 'SEO Services',
-          description: 'Improve your website visibility and drive organic traffic with our SEO expertise.',
-          price: 1200,
-          category: 'Marketing',
-          icon: '📈',
-          features: [
-            { name: 'Keyword Research', included: true },
-            { name: 'On-page Optimization', included: true },
-            { name: 'Link Building', included: true },
-            { name: 'Monthly Reports', included: true }
-          ],
-          duration: { value: 3, unit: 'months' },
-          status: 'active'
-        },
-        {
-          _id: '5',
-          name: 'Cloud Consulting',
-          description: 'Expert guidance on cloud strategy, migration, and optimization.',
-          price: 2800,
-          category: 'IT',
-          icon: '☁️',
-          features: [
-            { name: 'Cloud Assessment', included: true },
-            { name: 'Migration Planning', included: true },
-            { name: 'Security Analysis', included: true },
-            { name: 'Cost Optimization', included: true }
-          ],
-          duration: { value: 2, unit: 'weeks' },
-          status: 'active'
-        }
-      ];
-      setServices(sampleServices);
-      cachedData.current.services = sampleServices;
-      return sampleServices;
+      // If both endpoints fail, set empty array and show error
+      console.log('Both endpoints failed, setting empty services array');
+      setServices([]);
+      cachedData.current.services = [];
+      showAlert('Unable to load services. Please check your connection and try again.', 'error');
+      return [];
     } finally {
       setIsLoading(false);
     }
-  }, [apiUrl, navigate, services.length]);
+  }, [apiUrl, navigate, services.length, showAlert]);
 
   // Fetch quotations
   const fetchQuotations = async () => {

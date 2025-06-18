@@ -337,92 +337,6 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     }
   }, [showAlert]);
 
-  // Sample services data
-  const getSampleServices = useCallback(() => {
-    return [
-      { 
-        id: 1, 
-        name: 'Web Development', 
-        icon: '🌐', 
-        category: 'IT', 
-        price: 2500, 
-        status: 'active',
-        description: 'Professional web development services tailored to your business needs.',
-        features: [
-          { name: 'Responsive Design', included: true },
-          { name: 'CMS Integration', included: true },
-          { name: 'E-commerce Functionality', included: true },
-          { name: 'SEO Optimization', included: false }
-        ],
-        duration: { value: 1, unit: 'month' }
-      },
-      { 
-        id: 2, 
-        name: 'Mobile App Development', 
-        icon: '📱', 
-        category: 'IT', 
-        price: 3500, 
-        status: 'active',
-        description: 'Full-cycle mobile app development for iOS and Android platforms.',
-        features: [
-          { name: 'Native Development', included: true },
-          { name: 'Cross-platform Options', included: true },
-          { name: 'API Integration', included: true },
-          { name: 'App Store Submission', included: true }
-        ],
-        duration: { value: 2, unit: 'months' }
-      },
-      { 
-        id: 3, 
-        name: 'UI/UX Design', 
-        icon: '🎨', 
-        category: 'Design', 
-        price: 1800, 
-        status: 'active',
-        description: 'User-centered design focusing on creating meaningful and relevant experiences.',
-        features: [
-          { name: 'User Research', included: true },
-          { name: 'Wireframing', included: true },
-          { name: 'Prototyping', included: true },
-          { name: 'Usability Testing', included: false }
-        ],
-        duration: { value: 3, unit: 'weeks' }
-      },
-      { 
-        id: 4, 
-        name: 'SEO Services', 
-        icon: '🔍', 
-        category: 'Marketing', 
-        price: 1200, 
-        status: 'active',
-        description: 'Boost your online visibility and drive more traffic to your website.',
-        features: [
-          { name: 'Keyword Research', included: true },
-          { name: 'On-page SEO', included: true },
-          { name: 'Technical SEO', included: true },
-          { name: 'Link Building', included: false }
-        ],
-        duration: { value: 1, unit: 'month' }
-      },
-      { 
-        id: 5, 
-        name: 'Cloud Consulting', 
-        icon: '☁️', 
-        category: 'IT', 
-        price: 2800, 
-        status: 'active',
-        description: 'Expert guidance for cloud migration, architecture, and optimization.',
-        features: [
-          { name: 'Cloud Assessment', included: true },
-          { name: 'Migration Planning', included: true },
-          { name: 'Security Review', included: true },
-          { name: 'Ongoing Support', included: false }
-        ],
-        duration: { value: 1, unit: 'one-time' }
-      }
-    ];
-  }, []);
-
   // Fetch services
   const fetchServices = useCallback(async () => {
     try {
@@ -444,18 +358,12 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       }
     } catch (error) {
       console.error('Error in fetchServices:', error);
-      // If 403 error, use sample data fallback
-      if (error.response && error.response.status === 403) {
-        showAlert('Showing sample services (admin access required for real data)', 'warning');
-        setServices(getSampleServices());
-      } else {
-        showAlert('Failed to fetch services: ' + (error.response?.data?.message || error.message), 'error');
-        setServices([]);
-      }
+      showAlert('Failed to fetch services: ' + (error.response?.data?.message || error.message), 'error');
+      setServices([]);
     } finally {
       setIsLoading(false);
     }
-  }, [navigate, showAlert, getSampleServices]);
+  }, [navigate, showAlert]);
 
   // Fetch quotations (admin-specific)
   const fetchQuotations = useCallback(async () => {
