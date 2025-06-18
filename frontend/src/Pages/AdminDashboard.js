@@ -237,9 +237,27 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       if (response.data.user) {
         setCurrentUser(response.data.user);
         console.log('AdminDashboard currentUser after auth:', response.data.user); // DEBUG: Log currentUser
+        
         // Store permissions for conditional rendering
-        setUserPermissions(response.data.user.permissions || {});
-        console.log('User permissions:', response.data.user.permissions);
+        const userPerms = response.data.user.permissions || {};
+        const productAccess = response.data.user.productAccess || [];
+        
+        // Create a comprehensive permissions object that includes both legacy permissions and productAccess
+        const comprehensivePermissions = {
+          ...userPerms,
+          // Map productAccess to permissions for backward compatibility
+          crmAccess: userPerms.crmAccess || productAccess.some(p => p.productId === 'crm' && p.hasAccess),
+          hrmAccess: userPerms.hrmAccess || productAccess.some(p => p.productId === 'hrm' && p.hasAccess),
+          jobPortalAccess: userPerms.jobPortalAccess || productAccess.some(p => p.productId === 'job-portal' && p.hasAccess),
+          jobBoardAccess: userPerms.jobBoardAccess || productAccess.some(p => p.productId === 'job-board' && p.hasAccess),
+          projectManagementAccess: userPerms.projectManagementAccess || productAccess.some(p => p.productId === 'project-management' && p.hasAccess),
+          // Add productAccess array for detailed access information
+          productAccess: productAccess
+        };
+        
+        setUserPermissions(comprehensivePermissions);
+        console.log('Comprehensive user permissions:', comprehensivePermissions);
+        
         // Set session persistence
         localStorage.setItem('sessionPersist', 'true');
         return true;
@@ -532,20 +550,29 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
         // Transform the API response to match the expected format
         const formattedProducts = response.data.map(product => {
-          // Determine if this product is purchased based on user permissions
+          // Check if user has access to this product using both permissions and productAccess
           let hasAccess = false;
           
-          // Map product IDs to permission keys
-          if (product.productId === 'crm-pro' || product.productId === 'PROD-CRM-001') {
-            hasAccess = userPermissions.crmAccess;
-          } else if (product.productId === 'hrms-basic' || product.productId === 'PROD-HRMS-001') {
-            hasAccess = userPermissions.hrmsAccess;
-          } else if (product.productId === 'job-portal' || product.productId === 'PROD-JP-001') {
-            hasAccess = userPermissions.jobPortalAccess;
-          } else if (product.productId === 'job-board' || product.productId === 'PROD-JB-001') {
-            hasAccess = userPermissions.jobBoardAccess;
-          } else if (product.productId === 'project-management' || product.productId === 'PROD-PM-001') {
-            hasAccess = userPermissions.projectManagementAccess;
+          // First check productAccess array (newer method)
+          if (userPermissions.productAccess) {
+            const productAccess = userPermissions.productAccess.find(p => p.productId === product.productId);
+            hasAccess = productAccess && productAccess.hasAccess;
+          }
+          
+          // Fallback to legacy permissions if productAccess doesn't have the info
+          if (!hasAccess) {
+            // Map product IDs to permission keys
+            if (product.productId === 'crm' || product.productId === 'crm-pro' || product.productId === 'PROD-CRM-001') {
+              hasAccess = userPermissions.crmAccess;
+            } else if (product.productId === 'hrm' || product.productId === 'hrms-basic' || product.productId === 'PROD-HRMS-001') {
+              hasAccess = userPermissions.hrmAccess;
+            } else if (product.productId === 'job-portal' || product.productId === 'PROD-JP-001') {
+              hasAccess = userPermissions.jobPortalAccess;
+            } else if (product.productId === 'job-board' || product.productId === 'PROD-JB-001') {
+              hasAccess = userPermissions.jobBoardAccess;
+            } else if (product.productId === 'project-management' || product.productId === 'PROD-PM-001') {
+              hasAccess = userPermissions.projectManagementAccess;
+            }
           }
           
           return {
@@ -569,26 +596,26 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         // Provide sample products if none exist in the database
         const sampleProducts = [
           { 
-            id: 'crm-pro', 
-            name: 'CRM Professional', 
+            id: 'crm', 
+            name: 'CRM System', 
             description: 'Complete customer relationship management solution', 
             icon: '📊',
             purchased: userPermissions.crmAccess,
             startDate: userPermissions.crmAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.crmAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-CRM-001',
+            productId: 'crm',
             hasAccess: userPermissions.crmAccess
           },
           { 
-            id: 'hrms-basic', 
-            name: 'HRMS Basic', 
+            id: 'hrm', 
+            name: 'HR Management', 
             description: 'Human resources management system', 
             icon: '👥',
-            purchased: userPermissions.hrmsAccess,
-            startDate: userPermissions.hrmsAccess ? new Date().toLocaleDateString() : null,
-            endDate: userPermissions.hrmsAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-HRMS-001',
-            hasAccess: userPermissions.hrmsAccess
+            purchased: userPermissions.hrmAccess,
+            startDate: userPermissions.hrmAccess ? new Date().toLocaleDateString() : null,
+            endDate: userPermissions.hrmAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
+            productId: 'hrm',
+            hasAccess: userPermissions.hrmAccess
           },
           { 
             id: 'job-portal', 
@@ -598,7 +625,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             purchased: userPermissions.jobPortalAccess,
             startDate: userPermissions.jobPortalAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.jobPortalAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-JP-001',
+            productId: 'job-portal',
             hasAccess: userPermissions.jobPortalAccess
           },
           {
@@ -609,7 +636,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             purchased: userPermissions.jobBoardAccess,
             startDate: userPermissions.jobBoardAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.jobBoardAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-JB-001',
+            productId: 'job-board',
             hasAccess: userPermissions.jobBoardAccess
           },
           {
@@ -620,7 +647,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
             purchased: userPermissions.projectManagementAccess,
             startDate: userPermissions.projectManagementAccess ? new Date().toLocaleDateString() : null,
             endDate: userPermissions.projectManagementAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'PROD-PM-001',
+            productId: 'project-management',
             hasAccess: userPermissions.projectManagementAccess
           }
         ];
@@ -628,70 +655,10 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         setProducts(sampleProducts);
       }
     } catch (error) {
-      console.error('Failed to fetch products:', error);
-      
-      // Fallback to sample products on error
-      const sampleProducts = [
-        { 
-          id: 'crm-pro', 
-          name: 'CRM Professional', 
-          description: 'Complete customer relationship management solution', 
-          icon: '📊',
-          purchased: userPermissions.crmAccess,
-          startDate: userPermissions.crmAccess ? new Date().toLocaleDateString() : null,
-          endDate: userPermissions.crmAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-CRM-001',
-          hasAccess: userPermissions.crmAccess
-        },
-        { 
-          id: 'hrms-basic', 
-          name: 'HRMS Basic', 
-          description: 'Human resources management system', 
-          icon: '👥',
-          purchased: userPermissions.hrmsAccess,
-          startDate: userPermissions.hrmsAccess ? new Date().toLocaleDateString() : null,
-          endDate: userPermissions.hrmsAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-HRMS-001',
-          hasAccess: userPermissions.hrmsAccess
-        },
-        { 
-          id: 'job-portal', 
-          name: 'Job Portal', 
-          description: 'Full-featured job posting and application platform', 
-          icon: '🔍',
-          purchased: userPermissions.jobPortalAccess,
-          startDate: userPermissions.jobPortalAccess ? new Date().toLocaleDateString() : null,
-          endDate: userPermissions.jobPortalAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-JP-001',
-          hasAccess: userPermissions.jobPortalAccess
-        },
-        {
-          id: 'job-board',
-          name: 'Job Board',
-          description: 'Public job board for listings',
-          icon: '📋',
-          purchased: userPermissions.jobBoardAccess,
-          startDate: userPermissions.jobBoardAccess ? new Date().toLocaleDateString() : null,
-          endDate: userPermissions.jobBoardAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-JB-001',
-          hasAccess: userPermissions.jobBoardAccess
-        },
-        {
-          id: 'project-management',
-          name: 'Project Management',
-          description: 'Project tracking and team coordination',
-          icon: '📝',
-          purchased: userPermissions.projectManagementAccess,
-          startDate: userPermissions.projectManagementAccess ? new Date().toLocaleDateString() : null,
-          endDate: userPermissions.projectManagementAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-          productId: 'PROD-PM-001',
-          hasAccess: userPermissions.projectManagementAccess
-        }
-      ];
-      
-      setProducts(sampleProducts);
+      console.error('Error fetching products:', error);
+      showAlert('Failed to fetch products', 'error');
     }
-  }, [API_URL, userPermissions]);
+  }, [userPermissions, showAlert]); // Add userPermissions as dependency
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -3202,7 +3169,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
               </button>
             )}
             
-            {userPermissions.hrmsAccess && (
+            {userPermissions.hrmAccess && (
               <button 
                 className="nav-btn" 
                 onClick={() => handleMainNavigation('HRMS')}
@@ -3241,7 +3208,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                 <span className="btn-icon">📊</span> Project Management
               </button>
             )}
-                    </div>
+          </div>
                       
           {/* Main Content Area */}
           <div className="dashboard-content-container">
