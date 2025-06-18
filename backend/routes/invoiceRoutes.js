@@ -112,13 +112,8 @@ router.post('/', authenticateToken, isSuperAdmin, async (req, res) => {
         if (!service) {
           return res.status(400).json({ message: `Service not found` });
         }
-        // Check if enterprise has access to the service
-        const hasAccess = admin.productAccess.some(access => 
-          access.productId.toString() === service._id.toString() && access.hasAccess
-        );
-        if (!hasAccess) {
-          return res.status(403).json({ message: `Enterprise does not have access to service ${item.name}` });
-        }
+        // For superadmin, skip enterprise access check since they can create invoices for any service
+        // The access check is only relevant for admin users creating their own invoices
       } else if (item.type === 'quotation') {
         const quotation = await Quotation.findById(item.itemId);
         if (!quotation) {
@@ -139,6 +134,19 @@ router.post('/', authenticateToken, isSuperAdmin, async (req, res) => {
         if (existingInvoice) {
           return res.status(400).json({ message: `Quotation ${item.name} is already used in another invoice` });
         }
+      } else if (item.type === 'product') {
+        const Product = require('../models/productModel');
+        const product = await Product.findOne({
+          $or: [
+            { _id: item.itemId },
+            { productId: item.itemId }
+          ]
+        });
+        if (!product) {
+          return res.status(400).json({ message: `Product not found` });
+        }
+        // For superadmin, skip enterprise access check since they can create invoices for any product
+        // The access check is only relevant for admin users creating their own invoices
       }
     }
 
@@ -200,13 +208,8 @@ router.put('/:id', authenticateToken, isSuperAdmin, async (req, res) => {
         if (!service) {
           return res.status(400).json({ message: `Service ${item.name} not found` });
         }
-        // Check if enterprise has access to the service
-        const hasAccess = admin.productAccess.some(access => 
-          access.productId.toString() === service._id.toString() && access.hasAccess
-        );
-        if (!hasAccess) {
-          return res.status(403).json({ message: `Enterprise does not have access to service ${item.name}` });
-        }
+        // For superadmin, skip enterprise access check since they can create invoices for any service
+        // The access check is only relevant for admin users creating their own invoices
       } else if (item.type === 'quotation') {
         const quotation = await Quotation.findById(item.itemId);
         if (!quotation) {
@@ -228,6 +231,19 @@ router.put('/:id', authenticateToken, isSuperAdmin, async (req, res) => {
         if (existingInvoice) {
           return res.status(400).json({ message: `Quotation ${item.name} is already used in another invoice` });
         }
+      } else if (item.type === 'product') {
+        const Product = require('../models/productModel');
+        const product = await Product.findOne({
+          $or: [
+            { _id: item.itemId },
+            { productId: item.itemId }
+          ]
+        });
+        if (!product) {
+          return res.status(400).json({ message: `Product not found` });
+        }
+        // For superadmin, skip enterprise access check since they can create invoices for any product
+        // The access check is only relevant for admin users creating their own invoices
       }
     }
 

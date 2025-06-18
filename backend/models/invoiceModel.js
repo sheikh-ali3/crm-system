@@ -24,7 +24,7 @@ const invoiceSchema = new mongoose.Schema({
   items: [{
     type: {
       type: String,
-      enum: ['service', 'quotation'],
+      enum: ['service', 'quotation', 'product'],
       required: true
     },
     itemId: {

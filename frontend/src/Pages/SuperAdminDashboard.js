@@ -140,6 +140,7 @@ const SuperAdminDashboard = () => {
   // Add state for services and quotations
   const [enterpriseServices, setEnterpriseServices] = useState([]);
   const [enterpriseQuotations, setEnterpriseQuotations] = useState([]);
+  const [enterpriseProducts, setEnterpriseProducts] = useState([]);
 
   // Add at the top of the component, after useState imports
   const [openQuotationViewModal, setOpenQuotationViewModal] = useState(false);
@@ -1952,7 +1953,15 @@ const SuperAdminDashboard = () => {
         companyName: '',
         email: ''
       },
-      items: [],
+      items: [{
+        type: 'service',
+        itemId: '',
+        name: '',
+        description: '',
+        quantity: 1,
+        unitPrice: 0,
+        totalPrice: 0
+      }],
       totalAmount: 0,
       status: 'pending',
       issueDate: new Date(),
@@ -2008,8 +2017,8 @@ const SuperAdminDashboard = () => {
       
       // Recalculate invoice amount
       const amount = updatedItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-      const tax = prev.tax || 0;
-      const totalAmount = amount + (amount * tax / 100);
+      const discountAmount = (amount * (prev.discount || 0)) / 100;
+      const totalAmount = amount - discountAmount;
       
       return {
         ...prev,
@@ -2120,6 +2129,9 @@ const SuperAdminDashboard = () => {
       };
 
       console.log('Submitting invoice data:', JSON.stringify(invoiceData, null, 2));
+      console.log('Selected enterprise:', invoiceForm.adminId);
+      console.log('Enterprise details:', invoiceForm.enterpriseDetails);
+      console.log('Items:', invoiceForm.items);
       
       let response;
       if (selectedInvoice) {
@@ -2176,6 +2188,17 @@ const SuperAdminDashboard = () => {
         errorMessage = error.message;
       }
       
+      // Add more specific error handling
+      if (error.response?.status === 403) {
+        errorMessage = 'Access denied: ' + (error.response.data?.message || 'You do not have permission to perform this action');
+      } else if (error.response?.status === 404) {
+        errorMessage = 'Resource not found: ' + (error.response.data?.message || 'The requested resource was not found');
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid request: ' + (error.response.data?.message || 'Please check your input and try again');
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error: ' + (error.response.data?.message || 'An internal server error occurred');
+      }
+      
       showAlert(errorMessage, 'error');
     }
   };
@@ -2188,20 +2211,55 @@ const SuperAdminDashboard = () => {
 
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       
-      // Fetch services
-      const servicesResponse = await axios.get(`${apiUrl}/api/services`, {
+      // Fetch all services (superadmin can see all services)
+      const servicesResponse = await axios.get(`${apiUrl}/api/services/superadmin`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setEnterpriseServices(servicesResponse.data);
+      
+      if (servicesResponse.data && servicesResponse.data.length > 0) {
+        setEnterpriseServices(servicesResponse.data);
+        console.log('Loaded services:', servicesResponse.data.length);
+      } else {
+        setEnterpriseServices([]);
+        console.log('No services found');
+      }
 
-      // Fetch quotations for the selected enterprise
-      const quotationsResponse = await axios.get(`${apiUrl}/api/quotations/admin/${adminId}`, {
+      // Fetch all quotations and filter by adminId
+      const quotationsResponse = await axios.get(`${apiUrl}/api/services/superadmin/quotations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setEnterpriseQuotations(quotationsResponse.data);
+      
+      if (quotationsResponse.data && quotationsResponse.data.length > 0) {
+        // Filter quotations for the specific admin
+        const filteredQuotations = quotationsResponse.data.filter(quotation => 
+          quotation.adminId._id === adminId || quotation.adminId === adminId
+        );
+        setEnterpriseQuotations(filteredQuotations);
+        console.log('Loaded quotations for admin:', filteredQuotations.length);
+      } else {
+        setEnterpriseQuotations([]);
+        console.log('No quotations found');
+      }
+
+      // Fetch all products (superadmin can see all products)
+      const productsResponse = await axios.get(`${apiUrl}/superadmin/products`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (productsResponse.data && productsResponse.data.length > 0) {
+        setEnterpriseProducts(productsResponse.data);
+        console.log('Loaded products:', productsResponse.data.length);
+      } else {
+        setEnterpriseProducts([]);
+        console.log('No products found');
+      }
     } catch (error) {
       console.error('Error fetching enterprise data:', error);
       showAlert('Failed to fetch enterprise data', 'error');
+      // Set empty arrays to prevent undefined errors
+      setEnterpriseServices([]);
+      setEnterpriseQuotations([]);
+      setEnterpriseProducts([]);
     }
   };
 
@@ -2269,12 +2327,18 @@ const SuperAdminDashboard = () => {
 
   // Update item name change handler
   const handleItemNameChange = (index, name, itemId) => {
+    console.log('handleItemNameChange called:', { index, name, itemId, type: invoiceForm.items[index].type });
+    console.log('Available services:', enterpriseServices.length);
+    console.log('Available quotations:', enterpriseQuotations.length);
+    console.log('Available products:', enterpriseProducts.length);
+    
     setInvoiceForm(prev => {
       const updatedItems = [...prev.items];
       const item = updatedItems[index];
       
       if (item.type === 'service') {
         const service = enterpriseServices.find(s => s._id === itemId);
+        console.log('Found service:', service);
         if (service) {
           item.unitPrice = service.price || 0;
           item.description = service.description || '';
@@ -2283,11 +2347,21 @@ const SuperAdminDashboard = () => {
         }
       } else if (item.type === 'quotation') {
         const quotation = enterpriseQuotations.find(q => q._id === itemId);
+        console.log('Found quotation:', quotation);
         if (quotation) {
           item.unitPrice = quotation.finalPrice || 0;
           item.description = quotation.requestDetails || '';
           item.name = quotation.service?.name || name;
           item.itemId = quotation._id;
+        }
+      } else if (item.type === 'product') {
+        const product = enterpriseProducts.find(p => p._id === itemId || p.productId === itemId);
+        console.log('Found product:', product);
+        if (product) {
+          item.unitPrice = product.pricing?.price || 0;
+          item.description = product.description || '';
+          item.name = product.name;
+          item.itemId = product._id || product.productId;
         }
       }
       
@@ -2297,6 +2371,8 @@ const SuperAdminDashboard = () => {
       const amount = updatedItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
       const discountAmount = (amount * (prev.discount || 0)) / 100;
       const totalAmount = amount - discountAmount;
+      
+      console.log('Updated item:', item);
       
       return {
         ...prev,
@@ -2472,6 +2548,28 @@ const SuperAdminDashboard = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Add total price change handler
+  const handleTotalPriceChange = (index, value) => {
+    setInvoiceForm(prev => {
+      const updatedItems = [...prev.items];
+      const item = updatedItems[index];
+      
+      item.totalPrice = parseFloat(value) || 0;
+      
+      // Recalculate invoice totals
+      const amount = updatedItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+      const discountAmount = (amount * (prev.discount || 0)) / 100;
+      const totalAmount = amount - discountAmount;
+      
+      return {
+        ...prev,
+        items: updatedItems,
+        amount,
+        totalAmount
+      };
+    });
   };
 
   return (
@@ -3150,6 +3248,7 @@ const SuperAdminDashboard = () => {
                         >
                           <option value="service">Service</option>
                           <option value="quotation">Quotation</option>
+                          <option value="product">Product</option>
                         </select>
                       </div>
                       
@@ -3159,32 +3258,49 @@ const SuperAdminDashboard = () => {
                           value={item.itemId} 
                           onChange={(e) => handleItemNameChange(index, e.target.options[e.target.selectedIndex].text, e.target.value)}
                           required
-                      className="form-control"
-                    >
-                          <option value="">Select {item.type === 'service' ? 'Service' : 'Quotation'}</option>
+                          className="form-control"
+                        >
+                          <option value="">Select {item.type === 'service' ? 'Service' : item.type === 'quotation' ? 'Quotation' : 'Product'}</option>
                           {item.type === 'service' ? (
-                            enterpriseServices.map(service => (
-                              <option key={service._id} value={service._id}>
-                                {service.name}
-                              </option>
-                            ))
+                            enterpriseServices.length > 0 ? (
+                              enterpriseServices.map(service => (
+                                <option key={service._id} value={service._id}>
+                                  {service.name}
+                                </option>
+                              ))
+                            ) : (
+                              <option value="" disabled>No services available</option>
+                            )
+                          ) : item.type === 'quotation' ? (
+                            enterpriseQuotations.length > 0 ? (
+                              enterpriseQuotations.map(quotation => (
+                                <option key={quotation._id} value={quotation._id}>
+                                  {quotation.requestDetails}
+                                </option>
+                              ))
+                            ) : (
+                              <option value="" disabled>No quotations available</option>
+                            )
                           ) : (
-                            enterpriseQuotations.map(quotation => (
-                              <option key={quotation._id} value={quotation._id}>
-                                {quotation.requestDetails}
-                              </option>
-                            ))
+                            enterpriseProducts.length > 0 ? (
+                              enterpriseProducts.map(product => (
+                                <option key={product._id || product.productId} value={product._id || product.productId}>
+                                  {product.name}
+                                </option>
+                              ))
+                            ) : (
+                              <option value="" disabled>No products available</option>
+                            )
                           )}
-                    </select>
-                  </div>
-                </div>
+                        </select>
+                      </div>
+                    </div>
                     
                     <div className="form-group">
                       <label>Description</label>
                       <textarea 
                         value={item.description} 
-                        readOnly
-                        className="read-only"
+                        onChange={(e) => updateInvoiceItem(index, 'description', e.target.value)}
                         rows={2}
                       />
               </div>
@@ -3207,8 +3323,10 @@ const SuperAdminDashboard = () => {
                   <input
                           type="number" 
                           value={item.unitPrice} 
-                          readOnly
-                          className="read-only"
+                          onChange={(e) => handleUnitPriceChange(index, e.target.value)}
+                          required
+                          min="0"
+                          step="0.01"
                   />
                 </div>
                       
@@ -3217,8 +3335,9 @@ const SuperAdminDashboard = () => {
                         <input 
                           type="number" 
                           value={item.totalPrice} 
-                          readOnly
-                          className="read-only"
+                          onChange={(e) => handleTotalPriceChange(index, e.target.value)}
+                          min="0"
+                          step="0.01"
                         />
               </div>
                       
@@ -3248,8 +3367,9 @@ const SuperAdminDashboard = () => {
                   <input
                       type="number" 
                       value={invoiceForm.totalAmount} 
-                      readOnly
-                      className="read-only"
+                      onChange={(e) => setInvoiceForm({...invoiceForm, totalAmount: parseFloat(e.target.value) || 0})}
+                      min="0"
+                      step="0.01"
                   />
                 </div>
                 <div className="form-group">
@@ -3846,6 +3966,7 @@ const SuperAdminDashboard = () => {
                         >
                           <option value="service">Service</option>
                           <option value="quotation">Quotation</option>
+                          <option value="product">Product</option>
                         </select>
                       </div>
                       
@@ -3857,19 +3978,37 @@ const SuperAdminDashboard = () => {
                           required
                           className="form-control"
                         >
-                          <option value="">Select {item.type === 'service' ? 'Service' : 'Quotation'}</option>
+                          <option value="">Select {item.type === 'service' ? 'Service' : item.type === 'quotation' ? 'Quotation' : 'Product'}</option>
                           {item.type === 'service' ? (
-                            enterpriseServices.map(service => (
-                              <option key={service._id} value={service._id}>
-                                {service.name}
-                              </option>
-                            ))
+                            enterpriseServices.length > 0 ? (
+                              enterpriseServices.map(service => (
+                                <option key={service._id} value={service._id}>
+                                  {service.name}
+                                </option>
+                              ))
+                            ) : (
+                              <option value="" disabled>No services available</option>
+                            )
+                          ) : item.type === 'quotation' ? (
+                            enterpriseQuotations.length > 0 ? (
+                              enterpriseQuotations.map(quotation => (
+                                <option key={quotation._id} value={quotation._id}>
+                                  {quotation.requestDetails}
+                                </option>
+                              ))
+                            ) : (
+                              <option value="" disabled>No quotations available</option>
+                            )
                           ) : (
-                            enterpriseQuotations.map(quotation => (
-                              <option key={quotation._id} value={quotation._id}>
-                                {quotation.requestDetails}
-                              </option>
-                            ))
+                            enterpriseProducts.length > 0 ? (
+                              enterpriseProducts.map(product => (
+                                <option key={product._id || product.productId} value={product._id || product.productId}>
+                                  {product.name}
+                                </option>
+                              ))
+                            ) : (
+                              <option value="" disabled>No products available</option>
+                            )
                           )}
                         </select>
                       </div>
@@ -3879,8 +4018,7 @@ const SuperAdminDashboard = () => {
                       <label>Description</label>
                       <textarea 
                         value={item.description} 
-                        readOnly
-                        className="read-only"
+                        onChange={(e) => updateInvoiceItem(index, 'description', e.target.value)}
                         rows={2}
                       />
                     </div>
@@ -3901,11 +4039,10 @@ const SuperAdminDashboard = () => {
                       <div className="form-group">
                         <label>Unit Price ($) <span className="required">*</span></label>
                         <input
-                          type="number"
-                          value={item.unitPrice}
+                          type="number" 
+                          value={item.unitPrice} 
                           onChange={(e) => handleUnitPriceChange(index, e.target.value)}
-                          readOnly={item.type !== 'service'}
-                          className={item.type !== 'service' ? 'read-only' : ''}
+                          required
                           min="0"
                           step="0.01"
                         />
@@ -3916,8 +4053,9 @@ const SuperAdminDashboard = () => {
                         <input 
                           type="number" 
                           value={item.totalPrice} 
-                          readOnly
-                          className="read-only"
+                          onChange={(e) => handleTotalPriceChange(index, e.target.value)}
+                          min="0"
+                          step="0.01"
                         />
                       </div>
                       
@@ -3947,9 +4085,10 @@ const SuperAdminDashboard = () => {
                     <input 
                       type="number" 
                       value={invoiceForm.totalAmount} 
-                      readOnly
-                      className="read-only"
-                    />
+                      onChange={(e) => setInvoiceForm({...invoiceForm, totalAmount: parseFloat(e.target.value) || 0})}
+                      min="0"
+                      step="0.01"
+                  />
                   </div>
                   <div className="form-group">
                     <label>Discount (%)</label>
