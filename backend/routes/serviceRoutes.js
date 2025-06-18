@@ -16,11 +16,15 @@ router.delete('/:id', authenticateToken, authorizeRole('superadmin'), serviceCon
 
 // Admin service routes - read only
 router.get('/admin', authenticateToken, authorizeRole('admin'), serviceController.getAllServices);
+
+// Quotation routes (must come before /admin/:id to avoid conflicts)
+router.get('/admin/quotations', authenticateToken, authorizeRole('admin'), serviceController.getAdminQuotations);
+router.post('/admin/:serviceId/quotation', authenticateToken, authorizeRole('admin'), serviceController.requestQuotation);
+
+// Admin service routes - individual service (must come after specific routes)
 router.get('/admin/:id', authenticateToken, authorizeRole('admin'), serviceController.getServiceById);
 
-// Quotation routes
-router.post('/admin/:serviceId/quotation', authenticateToken, authorizeRole('admin'), serviceController.requestQuotation);
-router.get('/admin/quotations', authenticateToken, authorizeRole('admin'), serviceController.getAdminQuotations);
+// Generic quotation route
 router.post('/:serviceId/quotation', authenticateToken, authorizeRole('admin'), serviceController.requestQuotation);
 
 // Service statistics for SuperAdmin
