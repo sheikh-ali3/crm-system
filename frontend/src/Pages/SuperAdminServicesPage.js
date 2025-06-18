@@ -762,8 +762,8 @@ const SuperAdminServicesPage = () => {
                     <p>No services found. Add your first service to get started.</p>
                   </div>
                 ) : (
-                  <div className="services-table" style={{ overflowY: 'visible'}}>
-                    <table>
+                  <div className="services-table" style={{ width: '100%', overflowY: 'visible' }}>
+                    <table style={{ width: '100%' }}>
                       <thead>
                         <tr>
                           <th>Icon</th>

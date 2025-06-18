@@ -284,6 +284,9 @@ tr:hover {
 .service-form-modal, .quotation-form-modal, .quotation-details-modal {
   display: flex;
   flex-direction: column;
+  width: 90%;
+  max-width: 800px;
+  padding: 0;
 }
 
 .modal-header {
