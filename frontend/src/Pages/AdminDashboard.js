@@ -347,6 +347,12 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         setServices([]);
         return;
       }
+
+      // Debug: Log token and user info
+      console.log('Fetching services with token:', token ? 'Token exists' : 'No token');
+      console.log('API URL:', API_URL);
+      console.log('Full endpoint:', `${API_URL}/api/services/admin`);
+
       const response = await axios.get(`${API_URL}/api/services/admin`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -358,7 +364,19 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       }
     } catch (error) {
       console.error('Error in fetchServices:', error);
-      showAlert('Failed to fetch services: ' + (error.response?.data?.message || error.message), 'error');
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error headers:', error.response?.headers);
+      
+      // More specific error handling
+      if (error.response?.status === 403) {
+        showAlert('Access denied. Please make sure you are logged in as an admin user.', 'error');
+      } else if (error.response?.status === 401) {
+        showAlert('Authentication failed. Please log in again.', 'error');
+        navigate('/login');
+      } else {
+        showAlert('Failed to fetch services: ' + (error.response?.data?.message || error.message), 'error');
+      }
       setServices([]);
     } finally {
       setIsLoading(false);

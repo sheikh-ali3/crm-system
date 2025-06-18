@@ -139,7 +139,6 @@ const AdminServicesPage = () => {
           showAlert('Authentication failed: ' + (error.response.data?.message || 'Server error'), 'error');
         }
       } else if (error.request) {
-        // The request was made but no response was received
         console.log('No response received from server, network issue');
         showAlert('Unable to connect to the server. Please check your network connection.', 'error');
       } else {
@@ -181,9 +180,9 @@ const AdminServicesPage = () => {
         return;
       }
 
-      console.log('Fetching services from:', `${apiUrl}/services/admin`);
+      console.log('Fetching services from:', `${apiUrl}/api/services/admin`);
       
-      const response = await axios.get(`${apiUrl}/services/admin`, {
+      const response = await axios.get(`${apiUrl}/api/services/admin`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -203,40 +202,52 @@ const AdminServicesPage = () => {
       }
     } catch (error) {
       console.error('Error fetching services:', error.message);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      console.error('Error headers:', error.response?.headers);
+      
       if (error.response) {
         console.error('Error response:', error.response.status, error.response.data);
       } else if (error.request) {
         console.error('No response received:', error.request);
       }
       
-      // Try fallback endpoint
-      try {
-        console.log('Trying fallback endpoint for services');
-        const token = localStorage.getItem('token');
-        const fallbackResponse = await axios.get(`${apiUrl}/api/services`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          timeout: 10000
-        });
-        
-        if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
-          console.log('Fallback endpoint successful:', fallbackResponse.data);
-          setServices(fallbackResponse.data);
-          cachedData.current.services = fallbackResponse.data;
-          return fallbackResponse.data;
+      // More specific error handling
+      if (error.response?.status === 403) {
+        showAlert('Access denied. Please make sure you are logged in as an admin user.', 'error');
+      } else if (error.response?.status === 401) {
+        showAlert('Authentication failed. Please log in again.', 'error');
+        navigate('/admin/login');
+      } else {
+        // Try fallback endpoint
+        try {
+          console.log('Trying fallback endpoint for services');
+          const token = localStorage.getItem('token');
+          const fallbackResponse = await axios.get(`${apiUrl}/api/services`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 10000
+          });
+          
+          if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
+            console.log('Fallback endpoint successful:', fallbackResponse.data);
+            setServices(fallbackResponse.data);
+            cachedData.current.services = fallbackResponse.data;
+            return fallbackResponse.data;
+          }
+        } catch (fallbackError) {
+          console.error('Fallback endpoint also failed:', fallbackError.message);
         }
-      } catch (fallbackError) {
-        console.error('Fallback endpoint also failed:', fallbackError.message);
+        
+        // If both endpoints fail, set empty array and show error
+        console.log('Both endpoints failed, setting empty services array');
+        setServices([]);
+        cachedData.current.services = [];
+        showAlert('Unable to load services. Please check your connection and try again.', 'error');
+        return [];
       }
-      
-      // If both endpoints fail, set empty array and show error
-      console.log('Both endpoints failed, setting empty services array');
-      setServices([]);
-      cachedData.current.services = [];
-      showAlert('Unable to load services. Please check your connection and try again.', 'error');
-      return [];
     } finally {
       setIsLoading(false);
     }
@@ -254,9 +265,9 @@ const AdminServicesPage = () => {
       }
 
       setIsLoading(true);
-      console.log('Fetching quotations from:', `${apiUrl}/services/admin/quotations`);
+      console.log('Fetching quotations from:', `${apiUrl}/api/services/admin/quotations`);
       
-      const response = await axios.get(`${apiUrl}/services/admin/quotations`, {
+      const response = await axios.get(`${apiUrl}/api/services/admin/quotations`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -463,7 +474,7 @@ const AdminServicesPage = () => {
       
       // Primary and fallback endpoints
       const primaryEndpoint = `${apiUrl}/api/services/${serviceId}/quotation`;
-      const fallbackEndpoint = `${apiUrl}/services/admin/${serviceId}/quotation`;
+      const fallbackEndpoint = `${apiUrl}/api/services/admin/${serviceId}/quotation`;
       
       console.log('Attempting to send quotation request to primary endpoint:', primaryEndpoint);
       showAlert('Processing your quotation request...', 'info');
