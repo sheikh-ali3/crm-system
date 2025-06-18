@@ -2275,6 +2275,10 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                   handleTicketFormChange={handleTicketFormChange}
                   handleSubmitTicket={handleSubmitTicket}
                   onClose={() => setShowCreateTicketForm(false)}
+                  onSuccess={() => {
+                    // Form will be reset by handleSubmitTicket
+                    // Success message will be shown by handleSubmitTicket
+                  }}
                 />
               </div>
             )}
@@ -2966,11 +2970,11 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `${API_URL}/tickets`,
+        `${API_URL}/api/tickets`,
         {
           subject: ticketForm.subject,
           category: ticketForm.category,
-          description: ticketForm.description,
+          message: ticketForm.description, // Changed from description to message
           priority: ticketForm.priority,
           name: currentUser?.profile?.fullName || '',
           email: currentUser?.email || '',

@@ -1,28 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './TicketForm.css';
 
-const TicketForm = ({ onClose, onSuccess }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    department: '',
-    relatedTo: '',
-    message: '',
-    priority: 'Medium',
-    category: 'Other'
-  });
+const TicketForm = ({ ticketForm, handleTicketFormChange, handleSubmitTicket, onClose, onSuccess }) => {
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  // Reset form when component mounts or when ticketForm changes
+  useEffect(() => {
+    if (ticketForm && Object.values(ticketForm).every(value => value === '' || value === 'Low')) {
+      setAttachments([]);
+      setError('');
+    }
+  }, [ticketForm]);
 
   const handleFileChange = (e) => {
     if (e.target.files.length > 5) {
@@ -39,53 +30,26 @@ const TicketForm = ({ onClose, onSuccess }) => {
     setError('');
 
     try {
-      // Validate form data
-      const requiredFields = ['name', 'email', 'subject', 'department', 'relatedTo', 'message'];
-      const missingFields = requiredFields.filter(field => !formData[field]);
+      // Validate form data - only check fields that are in this form
+      const requiredFields = ['subject', 'category', 'description'];
+      const missingFields = requiredFields.filter(field => !ticketForm[field] || ticketForm[field].trim() === '');
       
       if (missingFields.length > 0) {
         throw new Error(`Please fill in all required fields: ${missingFields.join(', ')}`);
       }
 
-      const formDataToSend = new FormData();
+      // Call the handleSubmitTicket function passed from parent
+      await handleSubmitTicket();
       
-      // Add all form fields
-      Object.keys(formData).forEach(key => {
-        if (formData[key]) {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
-
-      // Add attachments
-      attachments.forEach(file => {
-        formDataToSend.append('attachments', file);
-      });
-
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Authentication token not found. Please log in again.');
-      }
-
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-      
-      // Log the data being sent
-      console.log('Submitting ticket with data:', {
-        ...formData,
-        attachmentsCount: attachments.length
-      });
-
-      const response = await axios.post(`${apiUrl}/api/tickets`, formDataToSend, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      if (response.data) {
-        console.log('Ticket created successfully:', response.data);
+      // If successful, call onSuccess callback
+      if (onSuccess) {
         onSuccess();
-        onClose();
       }
+      
+      // Reset attachments
+      setAttachments([]);
+      setError('');
+      
     } catch (error) {
       console.error('Ticket submission error:', {
         message: error.message,
@@ -120,81 +84,25 @@ const TicketForm = ({ onClose, onSuccess }) => {
       
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label>Name <span className="required">*</span></label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Email <span className="required">*</span></label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
           <label>Subject Issue <span className="required">*</span></label>
           <input
             type="text"
             name="subject"
-            value={formData.subject}
-            onChange={handleChange}
+            value={ticketForm.subject || ''}
+            onChange={handleTicketFormChange}
             required
           />
         </div>
 
         <div className="form-group">
-          <label>Department <span className="required">*</span></label>
-          <input
-            type="text"
-            name="department"
-            value={formData.department}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Related Products/Service <span className="required">*</span></label>
-          <input
-            type="text"
-            name="relatedTo"
-            value={formData.relatedTo}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Priority</label>
-          <select
-            name="priority"
-            value={formData.priority}
-            onChange={handleChange}
-          >
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Critical">Critical</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Category</label>
+          <label>Category <span className="required">*</span></label>
           <select
             name="category"
-            value={formData.category}
-            onChange={handleChange}
+            value={ticketForm.category || ''}
+            onChange={handleTicketFormChange}
+            required
           >
+            <option value="">Select category</option>
             <option value="Technical">Technical</option>
             <option value="Billing">Billing</option>
             <option value="Product">Product</option>
@@ -204,14 +112,28 @@ const TicketForm = ({ onClose, onSuccess }) => {
         </div>
 
         <div className="form-group">
-          <label>Message <span className="required">*</span></label>
+          <label>Description <span className="required">*</span></label>
           <textarea
-            name="message"
-            value={formData.message}
-            onChange={handleChange}
+            name="description"
+            value={ticketForm.description || ''}
+            onChange={handleTicketFormChange}
             required
             rows="5"
           />
+        </div>
+
+        <div className="form-group">
+          <label>Priority</label>
+          <select
+            name="priority"
+            value={ticketForm.priority || 'Low'}
+            onChange={handleTicketFormChange}
+          >
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Critical">Critical</option>
+          </select>
         </div>
 
         <div className="form-group">
