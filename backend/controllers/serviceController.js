@@ -460,91 +460,211 @@ exports.getAllQuotations = async (req, res) => {
 // Update quotation status (SuperAdmin only)
 exports.updateQuotationStatus = async (req, res) => {
   try {
+    console.log('=== UPDATE QUOTATION STATUS START ===');
+    console.log('Request params:', req.params);
+    console.log('Request body:', req.body);
+    console.log('User:', req.user);
+    
     const { status, finalPrice, superadminNotes, proposedDeliveryDate, rejectionReason } = req.body;
     const quotationId = req.params.id;
     
+    // Validate quotation ID
+    if (!quotationId) {
+      console.log('ERROR: No quotation ID provided');
+      return res.status(400).json({ message: 'Quotation ID is required' });
+    }
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(quotationId)) {
+      console.log('ERROR: Invalid quotation ID format:', quotationId);
+      return res.status(400).json({ message: 'Invalid quotation ID format' });
+    }
+    
+    console.log('Looking for quotation with ID:', quotationId);
+    
     let quotation;
-    let updatedQuotation;
     
     // Check if using mock DB
     if (process.env.USE_MOCK_DB === 'true') {
+      console.log('Using mock database');
       const mockDb = require('../utils/mockDb');
       
       // Find quotation in mock DB
       quotation = mockDb.findById('quotations', quotationId);
       if (!quotation) {
+        console.log('ERROR: Quotation not found in mock DB');
         return res.status(404).json({ message: 'Quotation not found' });
       }
       
-      // Validate status transitions
-      if (quotation.status === 'completed') {
-        return res.status(400).json({ message: 'Completed quotations cannot be modified' });
-      }
+      console.log('Found quotation in mock DB:', quotation);
+    } else {
+      console.log('Using real database');
       
-      // Validate required fields based on status
-      if (status === 'approved' && !finalPrice) {
-        return res.status(400).json({ message: 'Final price is required when approving a quotation' });
-      }
-      
-      if (status === 'rejected' && !rejectionReason) {
-        return res.status(400).json({ message: 'Rejection reason is required when rejecting a quotation' });
-      }
-      
-      // Create update data
-      const updateData = {
-        status: status || quotation.status,
-        finalPrice: finalPrice !== undefined ? parseFloat(finalPrice) : quotation.finalPrice,
-        superadminNotes: superadminNotes || quotation.superadminNotes || '',
-        updatedAt: new Date()
-      };
-      
-      // Add status-specific fields
-      if (status === 'approved') {
-        updateData.proposedDeliveryDate = proposedDeliveryDate ? new Date(proposedDeliveryDate) : new Date();
-        updateData.approvedDate = new Date();
-      }
-      
-      if (status === 'rejected') {
-        updateData.rejectionReason = rejectionReason;
-      }
-      
-      if (status === 'completed') {
-        updateData.completedDate = new Date();
-      }
-      
-      // Update quotation in mock DB
-      updatedQuotation = mockDb.update('quotations', quotationId, updateData);
-      console.log('Quotation updated in mock DB:', updatedQuotation._id);
-      
-      // Create notification for the admin who requested the quotation
+      // Find quotation in real DB
       try {
-        if (quotation.adminId) {
-          // Get service info for better notification message
+        quotation = await Quotation.findById(quotationId);
+        console.log('Database query result:', quotation);
+      } catch (dbError) {
+        console.error('Database query error:', dbError);
+        return res.status(500).json({ 
+          message: 'Database error while finding quotation', 
+          error: dbError.message 
+        });
+      }
+      
+      if (!quotation) {
+        console.log('ERROR: Quotation not found in database');
+        return res.status(404).json({ message: 'Quotation not found' });
+      }
+      
+      console.log('Found quotation in database:', {
+        _id: quotation._id,
+        status: quotation.status,
+        serviceId: quotation.serviceId,
+        adminId: quotation.adminId
+      });
+    }
+    
+    // Validate status transitions
+    if (quotation.status === 'completed') {
+      console.log('ERROR: Cannot modify completed quotation');
+      return res.status(400).json({ message: 'Completed quotations cannot be modified' });
+    }
+    
+    // Validate required fields based on status
+    if (status === 'approved') {
+      if (!finalPrice || finalPrice <= 0) {
+        console.log('ERROR: Final price required for approval');
+        return res.status(400).json({ 
+          message: 'Final price is required and must be greater than 0 when approving a quotation' 
+        });
+      }
+    }
+    
+    if (status === 'rejected') {
+      if (!rejectionReason || rejectionReason.trim() === '') {
+        console.log('ERROR: Rejection reason required');
+        return res.status(400).json({ 
+          message: 'Rejection reason is required when rejecting a quotation' 
+        });
+      }
+    }
+    
+    // Prepare update data
+    const updateData = {
+      status: status || quotation.status,
+      updatedAt: new Date()
+    };
+    
+    // Handle finalPrice
+    if (finalPrice !== undefined && finalPrice !== null && finalPrice !== '') {
+      const parsedPrice = parseFloat(finalPrice);
+      if (!isNaN(parsedPrice) && parsedPrice >= 0) {
+        updateData.finalPrice = parsedPrice;
+      }
+    }
+    
+    // Handle other fields
+    if (superadminNotes !== undefined) {
+      updateData.superadminNotes = superadminNotes || '';
+    }
+    
+    if (proposedDeliveryDate) {
+      updateData.proposedDeliveryDate = new Date(proposedDeliveryDate);
+    }
+    
+    if (rejectionReason) {
+      updateData.rejectionReason = rejectionReason;
+    }
+    
+    // Add status-specific fields
+    if (status === 'approved') {
+      updateData.approvedDate = new Date();
+      if (!updateData.proposedDeliveryDate) {
+        updateData.proposedDeliveryDate = new Date();
+      }
+    }
+    
+    if (status === 'rejected') {
+      // rejectionReason already handled above
+    }
+    
+    if (status === 'completed') {
+      updateData.completedDate = new Date();
+    }
+    
+    console.log('Update data prepared:', updateData);
+    
+    let updatedQuotation;
+    
+    // Update quotation
+    if (process.env.USE_MOCK_DB === 'true') {
+      console.log('Updating quotation in mock DB');
+      updatedQuotation = mockDb.update('quotations', quotationId, updateData);
+      console.log('Mock DB update result:', updatedQuotation);
+    } else {
+      console.log('Updating quotation in database');
+      try {
+        updatedQuotation = await Quotation.findByIdAndUpdate(
+          quotationId,
+          updateData,
+          { new: true, runValidators: true }
+        ).populate('serviceId').populate('adminId', 'email profile');
+        
+        console.log('Database update result:', updatedQuotation);
+      } catch (updateError) {
+        console.error('Database update error:', updateError);
+        return res.status(500).json({ 
+          message: 'Database error while updating quotation', 
+          error: updateError.message 
+        });
+      }
+    }
+    
+    if (!updatedQuotation) {
+      console.log('ERROR: Failed to update quotation');
+      return res.status(500).json({ message: 'Failed to update quotation' });
+    }
+    
+    console.log('Quotation updated successfully:', updatedQuotation._id);
+    
+    // Create notification (optional - don't fail if this fails)
+    try {
+      if (quotation.adminId) {
+        console.log('Creating notification for admin:', quotation.adminId);
+        
+        let serviceName = 'your requested service';
+        if (process.env.USE_MOCK_DB === 'true') {
+          const mockDb = require('../utils/mockDb');
           const service = mockDb.findById('services', quotation.serviceId);
-          const serviceName = service?.name || 'your requested service';
-          
-          // Create notification message based on status
-          let message = '';
-          let notificationType = 'info';
-          
-          switch (status) {
-            case 'approved':
-              message = `Your quotation for ${serviceName} has been approved with a final price of $${finalPrice}`;
-              notificationType = 'success';
-              break;
-            case 'rejected':
-              message = `Your quotation for ${serviceName} has been rejected. Reason: ${rejectionReason}`;
-              notificationType = 'error';
-              break;
-            case 'completed':
-              message = `Your quotation for ${serviceName} has been marked as completed`;
-              notificationType = 'success';
-              break;
-            default:
-              message = `Your quotation for ${serviceName} has been updated to ${status}`;
-          }
-          
-          // Create notification in mock DB
+          serviceName = service?.name || serviceName;
+        } else {
+          const Service = require('../models/serviceModel');
+          const service = await Service.findById(quotation.serviceId);
+          serviceName = service?.name || serviceName;
+        }
+        
+        let message = '';
+        let notificationType = 'info';
+        
+        switch (status) {
+          case 'approved':
+            message = `Your quotation for ${serviceName} has been approved with a final price of $${finalPrice}`;
+            notificationType = 'success';
+            break;
+          case 'rejected':
+            message = `Your quotation for ${serviceName} has been rejected. Reason: ${rejectionReason}`;
+            notificationType = 'error';
+            break;
+          case 'completed':
+            message = `Your quotation for ${serviceName} has been marked as completed`;
+            notificationType = 'success';
+            break;
+          default:
+            message = `Your quotation for ${serviceName} has been updated to ${status}`;
+        }
+        
+        if (process.env.USE_MOCK_DB === 'true') {
           mockDb.create('notifications', {
             userId: quotation.adminId,
             message,
@@ -558,93 +678,7 @@ exports.updateQuotationStatus = async (req, res) => {
             link: `/admin/services?tab=quotations`,
             createdAt: new Date()
           });
-          
-          console.log(`Created notification for admin ${quotation.adminId} about quotation update`);
-        }
-      } catch (notificationError) {
-        console.error('Error creating notification for admin (mock):', notificationError);
-        // Don't fail the main operation if notification creation fails
-      }
-    } else {
-      // Find quotation in real DB
-      quotation = await Quotation.findById(quotationId);
-      if (!quotation) {
-        return res.status(404).json({ message: 'Quotation not found' });
-      }
-      
-      // Validate status transitions
-      if (quotation.status === 'completed') {
-        return res.status(400).json({ message: 'Completed quotations cannot be modified' });
-      }
-      
-      // Validate required fields based on status
-      if (status === 'approved' && !finalPrice) {
-        return res.status(400).json({ message: 'Final price is required when approving a quotation' });
-      }
-      
-      if (status === 'rejected' && !rejectionReason) {
-        return res.status(400).json({ message: 'Rejection reason is required when rejecting a quotation' });
-      }
-      
-      // Create update data
-      const updateData = {
-        status: status || quotation.status,
-        finalPrice: finalPrice !== undefined ? parseFloat(finalPrice) : quotation.finalPrice,
-        superadminNotes: superadminNotes || quotation.superadminNotes || '',
-        updatedAt: new Date()
-      };
-      
-      // Add status-specific fields
-      if (status === 'approved') {
-        updateData.proposedDeliveryDate = proposedDeliveryDate ? new Date(proposedDeliveryDate) : new Date();
-        updateData.approvedDate = new Date();
-      }
-      
-      if (status === 'rejected') {
-        updateData.rejectionReason = rejectionReason;
-      }
-      
-      if (status === 'completed') {
-        updateData.completedDate = new Date();
-      }
-      
-      // Update quotation
-      updatedQuotation = await Quotation.findByIdAndUpdate(
-        quotationId,
-        updateData,
-        { new: true, runValidators: true }
-      ).populate('serviceId').populate('adminId', 'email profile');
-      
-      // Create notification for the admin who requested the quotation
-      try {
-        if (quotation.adminId) {
-          // Get service info for better notification message
-          const Service = require('../models/serviceModel');
-          const service = await Service.findById(quotation.serviceId);
-          const serviceName = service?.name || 'your requested service';
-          
-          // Create notification message based on status
-          let message = '';
-          let notificationType = 'info';
-          
-          switch (status) {
-            case 'approved':
-              message = `Your quotation for ${serviceName} has been approved with a final price of $${finalPrice}`;
-              notificationType = 'success';
-              break;
-            case 'rejected':
-              message = `Your quotation for ${serviceName} has been rejected. Reason: ${rejectionReason}`;
-              notificationType = 'error';
-              break;
-            case 'completed':
-              message = `Your quotation for ${serviceName} has been marked as completed`;
-              notificationType = 'success';
-              break;
-            default:
-              message = `Your quotation for ${serviceName} has been updated to ${status}`;
-          }
-          
-          // Create notification for the admin
+        } else {
           await notificationController.createNotification({
             userId: quotation.adminId,
             message,
@@ -656,22 +690,55 @@ exports.updateQuotationStatus = async (req, res) => {
             },
             link: `/admin/services?tab=quotations`
           });
-          
-          console.log(`Created notification for admin ${quotation.adminId} about quotation update`);
         }
-      } catch (notificationError) {
-        console.error('Error creating notification for admin:', notificationError);
-        // Don't fail the main operation if notification creation fails
+        
+        console.log('Notification created successfully');
       }
+    } catch (notificationError) {
+      console.error('Error creating notification (non-fatal):', notificationError);
+      // Don't fail the main operation if notification creation fails
     }
+    
+    console.log('=== UPDATE QUOTATION STATUS SUCCESS ===');
     
     res.status(200).json({
       message: 'Quotation updated successfully',
       quotation: updatedQuotation
     });
+    
   } catch (error) {
-    console.error('Error updating quotation:', error);
-    res.status(500).json({ message: 'Failed to update quotation', error: error.message });
+    console.error('=== UPDATE QUOTATION STATUS ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    // Provide specific error messages
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation error', 
+        details: Object.values(error.errors).map(err => err.message) 
+      });
+    }
+    
+    if (error.name === 'CastError') {
+      return res.status(400).json({ 
+        message: 'Invalid data format', 
+        details: error.message 
+      });
+    }
+    
+    if (error.name === 'MongoError' || error.name === 'MongoServerError') {
+      return res.status(500).json({ 
+        message: 'Database error', 
+        details: error.message 
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Failed to update quotation', 
+      error: error.message 
+    });
   }
 };
 
@@ -770,6 +837,54 @@ exports.getServiceStats = async (req, res) => {
         completed: 0
       },
       servicesByCategory: {}
+    });
+  }
+};
+
+// Test endpoint to check quotation existence
+exports.testQuotation = async (req, res) => {
+  try {
+    const quotationId = req.params.id;
+    console.log('Testing quotation with ID:', quotationId);
+    
+    if (process.env.USE_MOCK_DB === 'true') {
+      const mockDb = require('../utils/mockDb');
+      const quotation = mockDb.findById('quotations', quotationId);
+      console.log('Mock DB test result:', quotation);
+      
+      if (quotation) {
+        res.status(200).json({
+          message: 'Quotation found in mock DB',
+          quotation: quotation
+        });
+      } else {
+        res.status(404).json({
+          message: 'Quotation not found in mock DB',
+          availableQuotations: mockDb.find('quotations', {}).map(q => ({ id: q._id, status: q.status }))
+        });
+      }
+    } else {
+      const quotation = await Quotation.findById(quotationId);
+      console.log('Real DB test result:', quotation);
+      
+      if (quotation) {
+        res.status(200).json({
+          message: 'Quotation found in real DB',
+          quotation: quotation
+        });
+      } else {
+        const allQuotations = await Quotation.find({}).select('_id status');
+        res.status(404).json({
+          message: 'Quotation not found in real DB',
+          availableQuotations: allQuotations
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Test quotation error:', error);
+    res.status(500).json({
+      message: 'Error testing quotation',
+      error: error.message
     });
   }
 }; 

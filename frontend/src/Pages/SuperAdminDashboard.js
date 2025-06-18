@@ -2384,10 +2384,36 @@ const SuperAdminDashboard = () => {
         setIsLoading(false);
         return;
       }
+      
+      // Client-side validation
+      if (quotationForm.status === 'approved' && (!quotationForm.finalPrice || quotationForm.finalPrice <= 0)) {
+        showAlert('Final price is required and must be greater than 0 when approving a quotation', 'error');
+        setIsLoading(false);
+        return;
+      }
+      
+      if (quotationForm.status === 'rejected' && !quotationForm.rejectionReason) {
+        showAlert('Rejection reason is required when rejecting a quotation', 'error');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Prepare the data properly - convert empty strings to undefined and ensure proper number formatting
+      const updateData = {
+        status: quotationForm.status,
+        finalPrice: quotationForm.finalPrice && quotationForm.finalPrice !== '' ? parseFloat(quotationForm.finalPrice) : undefined,
+        superadminNotes: quotationForm.superadminNotes || undefined,
+        proposedDeliveryDate: quotationForm.proposedDeliveryDate || undefined,
+        rejectionReason: quotationForm.rejectionReason || undefined
+      };
+      
+      console.log('Sending update data:', updateData);
+      console.log('Quotation ID:', selectedQuotation._id);
+      
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const response = await axios.put(
-        `${apiUrl}/services/superadmin/quotations/${selectedQuotation._id}`,
-        quotationForm,
+        `${apiUrl}/api/services/superadmin/quotations/${selectedQuotation._id}`,
+        updateData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -2395,6 +2421,8 @@ const SuperAdminDashboard = () => {
           }
         }
       );
+      
+      console.log('Update response:', response.data);
       showAlert('Quotation updated successfully', 'success');
       setOpenQuotationForm(false);
       setSelectedQuotation(null);
@@ -2408,11 +2436,39 @@ const SuperAdminDashboard = () => {
       fetchQuotations();
     } catch (error) {
       console.error('Update quotation error:', error);
-      if (error.response?.status === 500) {
-        showAlert('Server error while updating quotation. Please try again later.', 'error');
+      console.error('Error response:', error.response);
+      console.error('Error message:', error.message);
+      
+      let errorMessage = 'Failed to update quotation';
+      
+      if (error.response) {
+        // Server responded with error status
+        const { status, data } = error.response;
+        console.error('Server error status:', status);
+        console.error('Server error data:', data);
+        
+        if (data && data.message) {
+          errorMessage = data.message;
+        } else if (data && data.details && Array.isArray(data.details)) {
+          errorMessage = data.details.join(', ');
+        } else if (status === 404) {
+          errorMessage = 'Quotation not found';
+        } else if (status === 400) {
+          errorMessage = 'Invalid data provided';
+        } else if (status === 403) {
+          errorMessage = 'Access denied';
+        } else if (status === 500) {
+          errorMessage = 'Server error while updating quotation. Please try again later.';
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'No response from server. Please check your connection and try again.';
       } else {
-        showAlert('Failed to update quotation', 'error');
+        // Something else happened
+        errorMessage = error.message || 'An unexpected error occurred';
       }
+      
+      showAlert(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -4027,7 +4083,13 @@ const SuperAdminDashboard = () => {
                 <input 
                   type="number" 
                   value={quotationForm.finalPrice} 
-                  onChange={(e) => setQuotationForm({...quotationForm, finalPrice: parseFloat(e.target.value) || ''})}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setQuotationForm({
+                      ...quotationForm, 
+                      finalPrice: value === '' ? '' : (parseFloat(value) || '')
+                    });
+                  }}
                   min="0"
                   step="0.01"
                   disabled={quotationForm.status !== 'approved' && quotationForm.status !== 'completed'}
