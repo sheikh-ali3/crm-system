@@ -276,10 +276,27 @@ const AdminServicesPage = () => {
       });
 
       console.log('Quotations API response:', response.data);
-      if (response.data) {
-        setQuotations(response.data);
+      if (Array.isArray(response.data)) {
+        // Use the same mapping as AdminDashboard.js, but ensure service and price are set
+        const mapped = response.data.map(q => ({
+          _id: q._id,
+          service: q.serviceId?.name || 'Unknown Service',
+          price: (q.finalPrice !== undefined && q.finalPrice !== null)
+            ? q.finalPrice
+            : (q.serviceId?.price !== undefined ? q.serviceId.price : undefined),
+          status: q.status || 'pending',
+          createdAt: q.createdAt,
+          // Keep other fields for details modal
+          enterpriseName: q.enterpriseDetails?.companyName || q.enterpriseName || '',
+          contactNumber: q.enterpriseDetails?.phone || q.contactNumber || '',
+          email: q.enterpriseDetails?.email || q.email || '',
+          description: q.requestDetails || q.description || '',
+          budget: q.requestedPrice || q.budget || 0,
+          finalPrice: q.finalPrice,
+          serviceId: q.serviceId
+        }));
+        setQuotations(mapped);
       } else {
-        console.log('No quotations data returned');
         setQuotations([]);
       }
     } catch (error) {
@@ -894,7 +911,7 @@ const AdminServicesPage = () => {
                     <tbody>
                       {quotations.map((quotation) => (
                         <tr key={quotation._id} className={quotation.status === 'approved' ? 'highlight-row' : ''}>
-                          <td>{quotation.serviceId?.name || 'Unknown Service'}</td>
+                          <td>{quotation.service}</td>
                           <td>{new Date(quotation.createdAt).toLocaleDateString()}</td>
                           <td>
                             <span className={`status-badge ${quotation.status}`}>
@@ -902,9 +919,7 @@ const AdminServicesPage = () => {
                             </span>
                           </td>
                           <td>
-                            {quotation.status === 'approved' || quotation.status === 'completed' 
-                              ? formatPrice(quotation.finalPrice || quotation.serviceId?.price) 
-                              : '-'}
+                            {quotation.price !== undefined && quotation.price !== null ? `$${quotation.price}` : '-'}
                           </td>
                           <td>
                             <button 
@@ -1086,7 +1101,7 @@ const AdminServicesPage = () => {
             </div>
             <div className="quotation-details-content">
               <div className="quotation-status-header">
-                <h3>{viewQuotation.serviceId?.name}</h3>
+                <h3>{viewQuotation.service}</h3>
                 <span className={`status-badge large ${viewQuotation.status}`}>
                   {getQuotationStatusText(viewQuotation.status)}
                 </span>
@@ -1137,7 +1152,7 @@ const AdminServicesPage = () => {
                 <div className="details-section">
                   <h4>Your Request</h4>
                   <div className="details-content">
-                    <p>{viewQuotation.requestDetails}</p>
+                    <p>{viewQuotation.description}</p>
                     
                     {viewQuotation.customRequirements && (
                       <>
@@ -1146,9 +1161,9 @@ const AdminServicesPage = () => {
                       </>
                     )}
                     
-                    {viewQuotation.requestedPrice > 0 && (
+                    {viewQuotation.budget > 0 && (
                       <div className="budget-info">
-                        <span>Your Proposed Budget: {formatPrice(viewQuotation.requestedPrice)}</span>
+                        <span>Your Proposed Budget: {formatPrice(viewQuotation.budget)}</span>
                       </div>
                     )}
                   </div>
