@@ -1195,17 +1195,22 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                         <td className="product-id">{product.productId}</td>
                         <td className="product-status">
                           <span className={`status-badge ${product.hasAccess ? 'active' : 'inactive'}`}> 
-                            {product.hasAccess ? 'Purchased' : 'Not Purchased'}
+                            {product.hasAccess ? 'Active' : 'Inactive'}
                           </span>
                         </td>
                         <td className="product-date">{product.startDate || '-'}</td>
                         <td className="product-date">{product.endDate || '-'}</td>
                         <td className="product-action">
                           {product.hasAccess ? (
-                            <span className="added-tag">Added</span>
+                            <button
+                              className="view-btn"
+                              onClick={() => handleViewProduct(product)}
+                            >
+                              View Products
+                            </button>
                           ) : (
-                            <button 
-                              className="request-btn" 
+                            <button
+                              className="request-btn"
                               onClick={() => handleRequestProduct(product)}
                             >
                               Add Product
