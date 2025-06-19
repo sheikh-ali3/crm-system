@@ -393,10 +393,10 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         setQuotations([]);
         return;
       }
-      // Use the correct quotations endpoint
-      const response = await axios.get(`${API_URL}/api/quotations`, {
+      // Use the correct quotations endpoint for admin
+      const response = await axios.get(`${API_URL}/api/services/admin/quotations`, {
         headers: { Authorization: `Bearer ${token}` }
-        });
+      });
       // Map the data to match the expected structure
       if (Array.isArray(response.data)) {
         const mapped = response.data.map(q => ({
@@ -411,10 +411,10 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           createdAt: q.createdAt,
         }));
         setQuotations(mapped);
-        } else {
+      } else {
         setQuotations([]);
-        }
-      } catch (error) {
+      }
+    } catch (error) {
       showAlert('Failed to fetch quotations', 'error');
       setQuotations([]);
     } finally {
