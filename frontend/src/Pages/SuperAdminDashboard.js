@@ -1158,7 +1158,26 @@ const SuperAdminDashboard = () => {
   const renderForm = (handleSubmit, title, submitButtonText) => {
     return (
       <>
-        <h2>{title}</h2>
+        <div className="modal-header">
+          <h2>{title}</h2>
+          <button
+            className="close-button"
+            onClick={() => {
+              setShowEnterpriseForm(false);
+              setEditingEnterprise(null);
+              setSelectedAdmin(null);
+              setEnterprise({
+                enterpriseId: '', companyName: '', logo: '', address: '', mailingAddress: '', city: '', country: '', zipCode: '', phoneNumber: '', companyEmail: '', loginLink: '', industry: '', businessType: '', size: ''
+              });
+              setEmail('');
+              setPassword('');
+              setProfile({ fullName: '', phone: '', department: '', status: 'active', joinDate: '' });
+              setPermissions({ crmAccess: false });
+              setProductAccess([]);
+            }}
+            aria-label="Close"
+          >×</button>
+        </div>
         <form onSubmit={handleSubmit} className="enterprise-form">
           <div className="form-section">
             <h3>Administrator Account</h3>
@@ -1390,9 +1409,17 @@ const SuperAdminDashboard = () => {
 
           <div className="dialog-actions">
             <button type="button" className="btn btn-outline" onClick={() => {
-              setOpenDialog(false);
-              setOpenEditDialog(false);
-              resetForm();
+              setShowEnterpriseForm(false);
+              setEditingEnterprise(null);
+              setSelectedAdmin(null);
+              setEnterprise({
+                enterpriseId: '', companyName: '', logo: '', address: '', mailingAddress: '', city: '', country: '', zipCode: '', phoneNumber: '', companyEmail: '', loginLink: '', industry: '', businessType: '', size: ''
+              });
+              setEmail('');
+              setPassword('');
+              setProfile({ fullName: '', phone: '', department: '', status: 'active', joinDate: '' });
+              setPermissions({ crmAccess: false });
+              setProductAccess([]);
             }}>
               Cancel
             </button>
@@ -3828,7 +3855,15 @@ const SuperAdminDashboard = () => {
                 onClick={() => {
                   setShowEnterpriseForm(false);
                   setEditingEnterprise(null);
-                  resetEnterpriseForm();
+                  setSelectedAdmin(null);
+                  setEnterprise({
+                    enterpriseId: '', companyName: '', logo: '', address: '', mailingAddress: '', city: '', country: '', zipCode: '', phoneNumber: '', companyEmail: '', loginLink: '', industry: '', businessType: '', size: ''
+                  });
+                  setEmail('');
+                  setPassword('');
+                  setProfile({ fullName: '', phone: '', department: '', status: 'active', joinDate: '' });
+                  setPermissions({ crmAccess: false });
+                  setProductAccess([]);
                 }}
                 aria-label="Close"
               >×</button>
@@ -3913,7 +3948,15 @@ const SuperAdminDashboard = () => {
                 <button type="button" className="btn btn-outline" onClick={() => {
                   setShowEnterpriseForm(false);
                   setEditingEnterprise(null);
-                  resetEnterpriseForm();
+                  setSelectedAdmin(null);
+                  setEnterprise({
+                    enterpriseId: '', companyName: '', logo: '', address: '', mailingAddress: '', city: '', country: '', zipCode: '', phoneNumber: '', companyEmail: '', loginLink: '', industry: '', businessType: '', size: ''
+                  });
+                  setEmail('');
+                  setPassword('');
+                  setProfile({ fullName: '', phone: '', department: '', status: 'active', joinDate: '' });
+                  setPermissions({ crmAccess: false });
+                  setProductAccess([]);
                 }}>
                   Cancel
                 </button>
