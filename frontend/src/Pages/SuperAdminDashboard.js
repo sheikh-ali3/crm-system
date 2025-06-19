@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './SuperAdminDashboard.css';
@@ -12,6 +12,13 @@ import websocketService from '../services/websocketService';
 
 // Initialize Modal
 Modal.setAppElement('#root');
+
+// Utility function to generate a unique enterpriseId
+function generateEnterpriseId() {
+  const now = Date.now();
+  const rand = Math.floor(Math.random() * 900) + 100; // 3-digit random
+  return `ENT-${now}-${rand}`;
+}
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -1217,12 +1224,13 @@ const SuperAdminDashboard = () => {
             <h3>Enterprise Details</h3>
             <div className="form-group">
               <label>Enterprise ID <span className="required">*</span></label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 className="form-control"
-                value={enterprise.enterpriseId} 
-                onChange={(e) => setEnterprise({...enterprise, enterpriseId: e.target.value})} 
-                required 
+                value={enterprise.enterpriseId}
+                onChange={e => setEnterprise({ ...enterprise, enterpriseId: e.target.value })}
+                required
+                readOnly={!selectedAdmin} // Read-only if creating, editable if editing
               />
             </div>
             <div className="form-group">
@@ -2572,6 +2580,33 @@ const SuperAdminDashboard = () => {
     });
   };
 
+  // When opening the create enterprise form, auto-generate enterpriseId
+  const handleOpenEnterpriseForm = () => {
+    setEnterprise({
+      enterpriseId: generateEnterpriseId(),
+      companyName: '',
+      logo: '',
+      address: '',
+      mailingAddress: '',
+      city: '',
+      country: '',
+      zipCode: '',
+      phoneNumber: '',
+      companyEmail: '',
+      loginLink: '',
+      industry: '',
+      businessType: '',
+      size: ''
+    });
+    setShowEnterpriseForm(true);
+    setEmail('');
+    setPassword('');
+    setProfile({ fullName: '', phone: '', department: '', status: 'active', joinDate: '' });
+    setPermissions({ crmAccess: false });
+    setProductAccess([]);
+    setSelectedAdmin(null);
+  };
+
   return (
     <div className="dashboard-layout">
       <SuperAdminSidebar 
@@ -2692,7 +2727,7 @@ const SuperAdminDashboard = () => {
           {activeTab === 'enterprise' && (
             <div className="enterprises-section">
               <h2>Enterprise Management</h2>
-              <button className="create-btn" onClick={() => setShowEnterpriseForm(true)}>
+              <button className="create-btn" onClick={handleOpenEnterpriseForm}>
                 Create New Enterprise
               </button>
               
