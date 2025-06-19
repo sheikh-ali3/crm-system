@@ -181,20 +181,34 @@ exports.deleteService = async (req, res) => {
 exports.getAdminQuotations = async (req, res) => {
   try {
     let quotations = [];
-    
-    // Build query for this admin
-    let query = { adminId: req.user.id };
-    
+
+    // Get the current admin's enterpriseId
+    const currentAdmin = await User.findById(req.user.id);
+    if (!currentAdmin || !currentAdmin.enterprise || !currentAdmin.enterprise.enterpriseId) {
+      return res.status(403).json({ message: 'Enterprise information not found for this admin.' });
+    }
+    const enterpriseId = currentAdmin.enterprise.enterpriseId;
+
+    // Find all admins with the same enterpriseId
+    const adminsInEnterprise = await User.find({
+      role: 'admin',
+      'enterprise.enterpriseId': enterpriseId
+    }).select('_id');
+    const adminIds = adminsInEnterprise.map(a => a._id);
+
+    // Build query for all admins in this enterprise
+    let query = { adminId: { $in: adminIds } };
+
     // Status filter
     if (req.query.status) {
       query.status = req.query.status;
     }
-    
+
     // Get quotations from database with populated references
     quotations = await Quotation.find(query)
       .sort({ createdAt: -1 })
       .populate('serviceId', 'name price category');
-    
+
     res.status(200).json(quotations);
   } catch (error) {
     console.error('Error fetching admin quotations:', error);

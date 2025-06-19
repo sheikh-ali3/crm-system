@@ -6,6 +6,7 @@ const Ticket = require('../models/Ticket');
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 const notificationController = require('../controllers/notificationController');
 const websocketService = require('../services/websocketService');
+const User = require('../models/User');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -138,7 +139,22 @@ router.get('/', authenticateToken, authorizeRole('superadmin'), async (req, res)
 router.get('/admin', authenticateToken, authorizeRole('admin', 'superadmin'), async (req, res) => {
   try {
     console.log('GET /api/tickets/admin called by user:', req.user);
-    const tickets = await Ticket.find({ adminId: req.user.id })
+    // Get the current admin's enterpriseId
+    const currentAdmin = await User.findById(req.user.id);
+    if (!currentAdmin || !currentAdmin.enterprise || !currentAdmin.enterprise.enterpriseId) {
+      return res.status(403).json({ message: 'Enterprise information not found for this admin.' });
+    }
+    const enterpriseId = currentAdmin.enterprise.enterpriseId;
+
+    // Find all admins with the same enterpriseId
+    const adminsInEnterprise = await User.find({
+      role: 'admin',
+      'enterprise.enterpriseId': enterpriseId
+    }).select('_id');
+    const adminIds = adminsInEnterprise.map(a => a._id);
+
+    // Find tickets for all admins in this enterprise
+    const tickets = await Ticket.find({ adminId: { $in: adminIds } })
       .populate('submittedBy', 'email profile.fullName')
       .sort({ createdAt: -1 });
     res.json(tickets);
