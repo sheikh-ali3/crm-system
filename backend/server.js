@@ -2522,6 +2522,12 @@ app.get('/tickets/stats/summary', authenticateToken, async (req, res) => {
   }
 });
 
+// Serve React frontend static files in production
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
+
 // Start the server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
