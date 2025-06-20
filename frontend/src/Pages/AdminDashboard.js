@@ -2194,7 +2194,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                   tickets={tickets}
                   onSelectTicket={() => { /* Admin doesn't need to select individual tickets for detail */ } }
                   onManageTicket={() => { /* Admin doesn't manage tickets like SuperAdmin */ } }
-                  onDeleteTicket={handleDeleteTicket}
+                  onDeleteTicket={ticket => handleDeleteTicket(ticket)}
                   onViewTicket={handleViewTicket}
                   userRole="admin"
                 />
@@ -2983,10 +2983,15 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
     setSelectedTicket(null);
   }, []);
 
-  const handleDeleteTicket = async (ticketId) => {
+  const handleDeleteTicket = async (ticket) => {
+    // Only allow deletion if status is 'Open' (case-insensitive)
+    if (!ticket || typeof ticket.status !== 'string' || ticket.status.toLowerCase() !== 'open') {
+      showAlert("You don't have permission to delete this ticket", 'error');
+      return;
+    }
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/api/tickets/${ticketId}`, {
+      await axios.delete(`${API_URL}/api/tickets/${ticket._id || ticket.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showAlert('Ticket deleted successfully', 'success');
