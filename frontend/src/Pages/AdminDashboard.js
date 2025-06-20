@@ -409,6 +409,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           budget: q.requestedPrice || q.budget || 0,
           status: q.status || 'pending',
           createdAt: q.createdAt,
+          finalPrice: q.finalPrice, // <-- Add this line
         }));
         setQuotations(mapped);
       } else {
@@ -2740,8 +2741,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       await axios.put(
         `${API_URL}/api/quotations/${quotationForm._id}`,
         {
-          description: quotationForm.description,
-          budget: quotationForm.budget
+          requestDetails: quotationForm.description, // send as requestDetails
+          requestedPrice: quotationForm.budget // send as requestedPrice
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
