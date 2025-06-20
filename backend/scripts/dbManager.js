@@ -4,7 +4,10 @@ const User = require('../models/User');
 const Customer = require('../models/customer');
 require('dotenv').config();
 
-const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/crm-system';
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+  throw new Error('MONGO_URI environment variable is not set. Please set it in your .env file.');
+}
 console.log(`Using database: ${mongoUri}`);
 
 // Connect to MongoDB

@@ -8,7 +8,10 @@ const os = require('os');
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 // MongoDB connection string
-const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/crm-system';
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+  throw new Error('MONGO_URI environment variable is not set. Please set it in your .env file.');
+}
 console.log('Connection string:', mongoUri);
 
 // Function to check if MongoDB is running

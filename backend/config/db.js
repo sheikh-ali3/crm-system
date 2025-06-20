@@ -1,9 +1,14 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  throw new Error('MONGO_URI environment variable is not set. Please set it in your .env file.');
+}
+
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
+    await mongoose.connect(MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
@@ -14,4 +19,5 @@ const connectDB = async () => {
   }
 };
 
+// For production, set MONGO_URI in a .env file and do not hardcode credentials.
 module.exports = connectDB;

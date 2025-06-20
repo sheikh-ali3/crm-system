@@ -5,13 +5,17 @@ const path = require('path');
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+  throw new Error('MONGO_URI environment variable is not set. Please set it in your .env file.');
+}
 console.log('MongoDB Connection Test');
 console.log('======================');
 console.log('Testing connection to MongoDB...');
-console.log('Connection string:', process.env.MONGO_URI || 'mongodb://localhost:27017/crm-system');
+console.log('Connection string:', mongoUri);
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/crm-system', {
+mongoose.connect(mongoUri, {
   connectTimeoutMS: 5000, // 5 seconds timeout
 })
   .then(conn => {

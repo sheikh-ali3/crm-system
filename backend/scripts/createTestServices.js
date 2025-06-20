@@ -3,8 +3,12 @@ const Service = require('../models/serviceModel');
 const User = require('../models/User');
 require('dotenv').config();
 
+const mongoUri = process.env.MONGODB_URI;
+if (!mongoUri) {
+  throw new Error('MONGODB_URI environment variable is not set. Please set it in your .env file.');
+}
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/moaqa', {
+mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });

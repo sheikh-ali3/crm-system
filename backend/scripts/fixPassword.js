@@ -17,8 +17,12 @@ const User = require('../models/User');
 // Connect to MongoDB
 async function connectToDb() {
   try {
+    const mongoUri = process.env.MONGO_URI;
+    if (!mongoUri) {
+      throw new Error('MONGO_URI environment variable is not set. Please set it in your .env file.');
+    }
     console.log('Connecting to MongoDB...');
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/crm-system');
+    await mongoose.connect(mongoUri);
     console.log('Connected to database:', mongoose.connection.name);
     return true;
   } catch (error) {
