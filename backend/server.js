@@ -378,56 +378,41 @@ const initializeSuperAdmin = async () => {
     const superAdmin = await User.findOne({ role: 'superadmin' });
     
     if (!superAdmin) {
-      console.log('No SuperAdmin found, creating default SuperAdmin account...');
-      
-      // Create default super admin
-      const superadminData = {
-        email: 'superadmin@example.com',
-        password: bcrypt.hashSync('superadmin123', 10),
-        role: 'superadmin',
-        profile: {
-          fullName: 'Super Admin',
-          department: 'Management',
-          status: 'active'
-        }
-      };
-      
-      const newSuperAdmin = await User.create(superadminData);
-      console.log('🔑 Default SuperAdmin created successfully with ID:', newSuperAdmin._id);
-      console.log('SuperAdmin email: superadmin@example.com');
-      console.log('SuperAdmin password: superadmin123');
+      console.log('No SuperAdmin found. Checking environment variables to create one...');
+
+      const superAdminEmail = process.env.SUPERADMIN_EMAIL;
+      const superAdminPassword = process.env.SUPERADMIN_PASSWORD;
+
+      if (superAdminEmail && superAdminPassword) {
+        console.log('Creating default SuperAdmin account from environment variables...');
+        
+        // Create default super admin from environment variables
+        const superadminData = {
+          email: superAdminEmail,
+          password: bcrypt.hashSync(superAdminPassword, 10),
+          role: 'superadmin',
+          profile: {
+            fullName: 'Super Admin',
+            department: 'Management',
+            status: 'active'
+          }
+        };
+        
+        const newSuperAdmin = await User.create(superadminData);
+        console.log('🔑 Default SuperAdmin created successfully with ID:', newSuperAdmin._id);
+        console.log('SuperAdmin email:', newSuperAdmin.email);
+      } else {
+        console.warn('⚠️ SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD environment variables are not set.');
+        console.warn('⚠️ Cannot create a default SuperAdmin account. Please set these variables in your .env file.');
+      }
     } else {
       console.log('✅ SuperAdmin account already exists:', superAdmin.email);
     }
 
-    // Create test admin if not exists
-    console.log('Checking for test Admin account...');
-    const testAdmin = await User.findOne({ email: 'admin@example.com' });
+    // The hardcoded test admin has been removed to improve security.
+    // If you need a test admin, please create it through the application's UI
+    // or by creating a secure seeding script.
     
-    if (!testAdmin) {
-      console.log('Creating test Admin account...');
-      const adminData = {
-        email: 'admin@example.com',
-        password: bcrypt.hashSync('adminpassword', 10),
-        role: 'admin',
-        permissions: {
-          crmAccess: true
-        },
-        profile: {
-          fullName: 'Test Admin',
-          department: 'IT',
-          phone: '123-456-7890',
-          status: 'active'
-        }
-      };
-      
-      const newAdmin = await User.create(adminData);
-      console.log('🔑 Test Admin created successfully with ID:', newAdmin._id);
-      console.log('Admin email: admin@example.com');
-      console.log('Admin password: adminpassword');
-    } else {
-      console.log('✅ Test Admin account already exists:', testAdmin.email);
-    }
   } catch (error) {
     console.error('❌ Error initializing users:', error);
     
