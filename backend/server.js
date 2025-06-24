@@ -46,6 +46,18 @@ const complaintRoutes = require('./routes/complaintRoutes'); // Import complaint
 dotenv.config();
 console.log('Environment loaded');
 
+// Debug log to check if connecting to MongoDB Atlas
+const mongoUriDebug = process.env.MONGO_URI;
+if (mongoUriDebug) {
+  if (mongoUriDebug.includes('mongodb.net')) {
+    console.log('🔍 MongoDB Atlas URI detected.');
+  } else {
+    console.log('⚠️ Not using MongoDB Atlas. URI:', mongoUriDebug);
+  }
+} else {
+  console.log('❌ No MONGO_URI found in environment variables.');
+}
+
 // Connect to MongoDB with more robust error handling
 const dbConnect = async () => {
   try {
