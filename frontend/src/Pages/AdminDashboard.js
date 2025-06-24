@@ -488,7 +488,6 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
           
           // Fallback to legacy permissions if productAccess doesn't have the info
           if (!hasAccess) {
-            // Map product IDs to permission keys
             if (product.productId === 'crm' || product.productId === 'crm-pro' || product.productId === 'PROD-CRM-001') {
               hasAccess = userPermissions.crmAccess;
             } else if (product.productId === 'hrm' || product.productId === 'hrms-basic' || product.productId === 'PROD-HRMS-001') {
@@ -518,74 +517,14 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
         setProducts(formattedProducts);
         console.log('Products loaded from API:', formattedProducts);
       } else {
-        console.log('No products returned from API, using sample products');
-        
-        // Provide sample products if none exist in the database
-        const sampleProducts = [
-          { 
-            id: 'crm', 
-            name: 'CRM System', 
-            description: 'Complete customer relationship management solution', 
-            icon: '📊',
-            purchased: userPermissions.crmAccess,
-            startDate: userPermissions.crmAccess ? new Date().toLocaleDateString() : null,
-            endDate: userPermissions.crmAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'crm',
-            hasAccess: userPermissions.crmAccess
-          },
-          { 
-            id: 'hrm', 
-            name: 'HR Management', 
-            description: 'Human resources management system', 
-            icon: '👥',
-            purchased: userPermissions.hrmAccess,
-            startDate: userPermissions.hrmAccess ? new Date().toLocaleDateString() : null,
-            endDate: userPermissions.hrmAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'hrm',
-            hasAccess: userPermissions.hrmAccess
-          },
-          { 
-            id: 'job-portal', 
-            name: 'Job Portal', 
-            description: 'Full-featured job posting and application platform', 
-            icon: '🔍',
-            purchased: userPermissions.jobPortalAccess,
-            startDate: userPermissions.jobPortalAccess ? new Date().toLocaleDateString() : null,
-            endDate: userPermissions.jobPortalAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'job-portal',
-            hasAccess: userPermissions.jobPortalAccess
-          },
-          {
-            id: 'job-board',
-            name: 'Job Board',
-            description: 'Public job board for listings',
-            icon: '📋',
-            purchased: userPermissions.jobBoardAccess,
-            startDate: userPermissions.jobBoardAccess ? new Date().toLocaleDateString() : null,
-            endDate: userPermissions.jobBoardAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'job-board',
-            hasAccess: userPermissions.jobBoardAccess
-          },
-          {
-            id: 'project-management',
-            name: 'Project Management',
-            description: 'Project tracking and team coordination',
-            icon: '📝',
-            purchased: userPermissions.projectManagementAccess,
-            startDate: userPermissions.projectManagementAccess ? new Date().toLocaleDateString() : null,
-            endDate: userPermissions.projectManagementAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            productId: 'project-management',
-            hasAccess: userPermissions.projectManagementAccess
-          }
-        ];
-        
-        setProducts(sampleProducts);
+        // No products returned from API
+        setProducts([]);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
       showAlert('Failed to fetch products', 'error');
     }
-  }, [userPermissions, showAlert]); // Add userPermissions as dependency
+  }, [userPermissions, showAlert]);
 
   const fetchInvoices = useCallback(async () => {
     try {
