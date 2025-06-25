@@ -1,6 +1,7 @@
 const Product = require('../models/productModel');
 const User = require('../models/User');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 
 // Generate a unique access link token
 const generateAccessLink = () => {
@@ -122,19 +123,33 @@ exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, icon, category, features, pricing, active, displayInMenu, menuOrder } = req.body;
-    
-    // Find the product by ID or productId
-    const product = await Product.findOne({ 
-      $or: [
-        { _id: id },
-        { productId: id }
-      ]
-    });
-    
+
+    // Validate ID: must be a valid ObjectId or a non-empty string (for productId)
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(id);
+    if (!isValidObjectId && (!id || typeof id !== 'string')) {
+      return res.status(400).json({ message: 'Invalid product ID format.' });
+    }
+
+    // Validate request body (basic checks)
+    if (pricing && (typeof pricing !== 'object' || Array.isArray(pricing))) {
+      return res.status(400).json({ message: 'Invalid pricing format.' });
+    }
+    if (features && !Array.isArray(features)) {
+      return res.status(400).json({ message: 'Features must be an array.' });
+    }
+
+    // Find the product by _id or productId, but never use an empty object in $or
+    let product;
+    if (isValidObjectId) {
+      product = await Product.findOne({ _id: id });
+    } else {
+      product = await Product.findOne({ productId: id });
+    }
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    
+
     // Update fields
     if (name) product.name = name;
     if (description) product.description = description;
@@ -145,15 +160,24 @@ exports.updateProduct = async (req, res) => {
     if (active !== undefined) product.active = active;
     if (displayInMenu !== undefined) product.displayInMenu = displayInMenu;
     if (menuOrder !== undefined) product.menuOrder = menuOrder;
-    
+
     product.updatedAt = Date.now();
-    
-    await product.save();
-    
+
+    try {
+      await product.save();
+    } catch (err) {
+      // Handle Mongoose validation errors
+      if (err.name === 'ValidationError') {
+        console.error('Validation error updating product:', err);
+        return res.status(400).json({ message: 'Validation error', error: err.message, details: err.errors });
+      }
+      throw err;
+    }
+
     // Generate access URL
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const accessUrl = `${baseUrl}/products/access/${product.accessLink}`;
-    
+
     res.json({
       ...product.toObject(),
       accessUrl

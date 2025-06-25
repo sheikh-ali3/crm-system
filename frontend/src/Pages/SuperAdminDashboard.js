@@ -9,6 +9,7 @@ import SuperAdminSidebar from '../Components/Layout/SuperAdminSidebar';
 import ThemeToggle from '../Components/UI/ThemeToggle';
 import Modal from 'react-modal';
 import websocketService from '../services/websocketService';
+import { updateProduct } from '../services/api';
 
 // Initialize Modal
 Modal.setAppElement('#root');
@@ -1425,15 +1426,22 @@ const SuperAdminDashboard = () => {
     e.preventDefault();
     try {
       setIsLoading(true);
-      
-      // In a real implementation, this would update the product via API
-      const updatedProducts = products.map(p => 
-        p.id === selectedProduct.id 
-          ? {...p, name: newProduct.name, description: newProduct.description, icon: newProduct.icon} 
+
+      // Only send name, description, and icon in the update payload
+      await updateProduct(selectedProduct.id, {
+        name: newProduct.name,
+        description: newProduct.description,
+        icon: newProduct.icon
+      });
+
+      // Update local state after successful API update
+      const updatedProducts = products.map(p =>
+        p.id === selectedProduct.id
+          ? { ...p, name: newProduct.name, description: newProduct.description, icon: newProduct.icon }
           : p
       );
-      
       setProducts(updatedProducts);
+
       showAlert(`Product "${newProduct.name}" updated successfully`, 'success');
       setOpenProductEditDialog(false);
       resetProductForm();
