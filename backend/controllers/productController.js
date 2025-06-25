@@ -192,36 +192,46 @@ exports.updateProduct = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Find the product by ID or productId
-    const product = await Product.findOne({ 
-      $or: [
-        { _id: id },
-        { productId: id }
-      ]
-    });
-    
+
+    // Validate ID: must be a valid ObjectId or a non-empty string (for productId)
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(id);
+    if (!isValidObjectId && (!id || typeof id !== 'string')) {
+      return res.status(400).json({ message: 'Invalid product ID format.' });
+    }
+
+    // Find the product by _id or productId, but never use an empty object in $or
+    let product;
+    if (isValidObjectId) {
+      product = await Product.findOne({ _id: id });
+    } else {
+      product = await Product.findOne({ productId: id });
+    }
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    
+
     // Check if product is in use by any admin
     const adminCount = await User.countDocuments({
       'productAccess.productId': product.productId,
       'productAccess.hasAccess': true
     });
-    
+
     if (adminCount > 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: `Cannot delete product that is being used by ${adminCount} admin(s)`,
         adminCount
       });
     }
-    
+
     await Product.findByIdAndDelete(product._id);
-    
+
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
+    // Handle Mongoose cast errors
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: 'Invalid product ID format.' });
+    }
     console.error('Error deleting product:', error);
     res.status(500).json({ message: 'Failed to delete product', error: error.message });
   }

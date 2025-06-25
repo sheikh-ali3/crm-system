@@ -9,7 +9,7 @@ import SuperAdminSidebar from '../Components/Layout/SuperAdminSidebar';
 import ThemeToggle from '../Components/UI/ThemeToggle';
 import Modal from 'react-modal';
 import websocketService from '../services/websocketService';
-import { updateProduct } from '../services/api';
+import { updateProduct, deleteProduct } from '../services/api';
 
 // Initialize Modal
 Modal.setAppElement('#root');
@@ -2547,6 +2547,27 @@ const SuperAdminDashboard = () => {
     setSelectedAdmin(null);
   };
 
+  // Add after handleDeleteService
+  const handleDeleteProduct = async (productId) => {
+    if (window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      try {
+        setIsLoading(true);
+        await deleteProduct(productId);
+        setProducts(prevProducts => prevProducts.filter(product => product.id !== productId));
+        showAlert('Product deleted successfully', 'success');
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        let errorMessage = error.response?.data?.message || 'Failed to delete product';
+        if (error.response?.data?.adminCount) {
+          errorMessage += ` (In use by ${error.response.data.adminCount} admin(s))`;
+        }
+        showAlert(errorMessage, 'error');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   return (
     <div className="dashboard-layout">
       <SuperAdminSidebar 
@@ -2805,6 +2826,12 @@ const SuperAdminDashboard = () => {
                             onClick={() => handleViewEnterprises(product)}
                           >
                             <i className="users-icon"></i> View Enterprises
+                          </button>
+                          <button
+                            className="delete-btn"
+                            onClick={() => handleDeleteProduct(product.id)}
+                          >
+                            <i className="delete-icon"></i> Delete
                           </button>
                         </div>
                       </div>
