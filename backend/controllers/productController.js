@@ -72,14 +72,27 @@ exports.getAllProducts = async (req, res) => {
     
     const products = await Product.find(query).sort({ menuOrder: 1, createdAt: -1 });
     
+    // If user is authenticated (admin), merge productAccess info
+    let userProductAccess = [];
+    if (req.user && req.user.id) {
+      const user = await User.findById(req.user.id);
+      if (user && user.productAccess) {
+        userProductAccess = user.productAccess;
+      }
+    }
+
     // Format the response
     const formattedProducts = products.map(product => {
       const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
       const accessUrl = `${baseUrl}/products/access/${product.accessLink}`;
       
+      // Find access info for this product
+      const accessInfo = userProductAccess.find(p => p.productId === product.productId);
       return {
         ...product.toObject(),
-        accessUrl
+        accessUrl,
+        hasAccess: accessInfo ? !!accessInfo.hasAccess : false,
+        grantedAt: accessInfo && accessInfo.hasAccess ? accessInfo.grantedAt : null
       };
     });
     

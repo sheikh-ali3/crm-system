@@ -473,58 +473,41 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
       const response = await axios.get(`${API_URL}/api/products`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-        // Transform the API response to match the expected format
+        // Use backend-provided hasAccess and grantedAt
         const formattedProducts = response.data.map(product => {
-          // Check if user has access to this product using both permissions and productAccess
-          let hasAccess = false;
-          
-          // First check productAccess array (newer method)
-          if (userPermissions.productAccess) {
-            const productAccess = userPermissions.productAccess.find(p => p.productId === product.productId);
-            hasAccess = productAccess && productAccess.hasAccess;
+          let startDate = '-';
+          let endDate = '-';
+          if (product.hasAccess && product.grantedAt) {
+            const grantedDate = new Date(product.grantedAt);
+            startDate = grantedDate.toLocaleDateString();
+            // Calculate one month later
+            const endDateObj = new Date(grantedDate);
+            endDateObj.setMonth(endDateObj.getMonth() + 1);
+            endDate = endDateObj.toLocaleDateString();
           }
-          
-          // Fallback to legacy permissions if productAccess doesn't have the info
-          if (!hasAccess) {
-            if (product.productId === 'crm' || product.productId === 'crm-pro' || product.productId === 'PROD-CRM-001') {
-              hasAccess = userPermissions.crmAccess;
-            } else if (product.productId === 'hrm' || product.productId === 'hrms-basic' || product.productId === 'PROD-HRMS-001') {
-              hasAccess = userPermissions.hrmAccess;
-            } else if (product.productId === 'job-portal' || product.productId === 'PROD-JP-001') {
-              hasAccess = userPermissions.jobPortalAccess;
-            } else if (product.productId === 'job-board' || product.productId === 'PROD-JB-001') {
-              hasAccess = userPermissions.jobBoardAccess;
-            } else if (product.productId === 'project-management' || product.productId === 'PROD-PM-001') {
-              hasAccess = userPermissions.projectManagementAccess;
-            }
-          }
-          
           return {
             id: product.productId || product._id,
             name: product.name,
             description: product.description,
             icon: product.icon || '📋',
             productId: product.productId,
-            purchased: hasAccess,
-            startDate: hasAccess ? new Date().toLocaleDateString() : null,
-            endDate: hasAccess ? new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString() : null,
-            hasAccess: hasAccess
+            hasAccess: product.hasAccess,
+            startDate,
+            endDate
           };
         });
-        
         setProducts(formattedProducts);
         console.log('Products loaded from API:', formattedProducts);
       } else {
-        // No products returned from API
         setProducts([]);
       }
     } catch (error) {
       console.error('Error fetching products:', error);
       showAlert('Failed to fetch products', 'error');
     }
-  }, [userPermissions, showAlert]);
+  }, [showAlert]);
 
   const fetchInvoices = useCallback(async () => {
     try {
@@ -1128,7 +1111,7 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                 <tbody>
                   {products && products.length > 0 ? (
                     products.map(product => (
-                      <tr key={product.id} className={product.purchased ? 'product-row purchased' : 'product-row'}>
+                      <tr key={product.id} className={product.hasAccess ? 'product-row active' : 'product-row'}>
                         <td className="product-icon">{product.icon}</td>
                         <td className="product-name">{product.name}</td>
                         <td className="product-description">{product.description}</td>
@@ -1138,8 +1121,8 @@ const AdminDashboard = ({ activeTab: initialActiveTab }) => {
                             {product.hasAccess ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td className="product-date">{product.startDate || '-'}</td>
-                        <td className="product-date">{product.endDate || '-'}</td>
+                        <td className="product-date">{product.startDate}</td>
+                        <td className="product-date">{product.endDate}</td>
                         <td className="product-action">
                           {product.hasAccess ? (
                             <button
